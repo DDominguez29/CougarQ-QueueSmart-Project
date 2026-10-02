@@ -149,7 +149,7 @@ function QueueManagementPage() {
                             {student.name}
                           </span>
                           <span className="queue-student__meta">
-                            {student.studentId} / {student.ticket}
+                            {student.studentId} / {student.email}
                           </span>
                         </div>
                       </td>

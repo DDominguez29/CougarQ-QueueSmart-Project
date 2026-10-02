@@ -78,6 +78,80 @@ export const queueActivity = [
   },
 ];
 
+export const reportStats = [
+  {
+    label: 'Students Served',
+    value: '186',
+    detail: 'Completed today',
+  },
+  {
+    label: 'Completion Rate',
+    value: '94%',
+    detail: 'Served before expiring',
+  },
+  {
+    label: 'Avg Service Time',
+    value: '6 min',
+    detail: 'At CTAP windows',
+  },
+];
+
+export const hourlyServiceVolume = [
+  {
+    hour: '8 AM',
+    served: 14,
+    percent: 31,
+  },
+  {
+    hour: '9 AM',
+    served: 24,
+    percent: 53,
+  },
+  {
+    hour: '10 AM',
+    served: 38,
+    percent: 84,
+  },
+  {
+    hour: '11 AM',
+    served: 45,
+    percent: 100,
+  },
+  {
+    hour: '12 PM',
+    served: 41,
+    percent: 91,
+  },
+  {
+    hour: '1 PM',
+    served: 24,
+    percent: 53,
+  },
+];
+
+export const serviceReportBreakdown = [
+  {
+    service: 'CTAP Pickup',
+    served: 124,
+    detail: 'Windows 1 and 2',
+  },
+  {
+    service: 'CTAP Express',
+    served: 42,
+    detail: 'Window 3',
+  },
+  {
+    service: 'Support Table',
+    served: 20,
+    detail: 'Walk-up help',
+  },
+  {
+    service: 'Expired',
+    served: 8,
+    detail: 'Needs review',
+  },
+];
+
 export const queueRushMetrics = [
   {
     label: 'Next 15 Minutes',
@@ -100,7 +174,8 @@ export const activeQueue = [
   {
     position: 1,
     name: 'Dylan Whiteman',
-    studentId: 'UH-1842',
+    studentId: '1842097',
+    email: 'dwhiteman@cougarnet.uh.edu',
     service: 'CTAP Express',
     ticket: 'A108',
     waited: '4 min',
@@ -111,7 +186,8 @@ export const activeQueue = [
   {
     position: 2,
     name: 'Maya Patel',
-    studentId: 'UH-2297',
+    studentId: '2297416',
+    email: 'mpatel14@cougarnet.uh.edu',
     service: 'Physical CTAP Material Pickup',
     ticket: 'B214',
     waited: '31 min',
@@ -122,7 +198,8 @@ export const activeQueue = [
   {
     position: 3,
     name: 'Carlos Nguyen',
-    studentId: 'UH-3310',
+    studentId: '3310852',
+    email: 'cnguyen8@cougarnet.uh.edu',
     service: 'Physical CTAP Material Pickup',
     ticket: 'B215',
     waited: '28 min',
@@ -133,7 +210,8 @@ export const activeQueue = [
   {
     position: 4,
     name: 'Ethan Torrie',
-    studentId: 'UH-4105',
+    studentId: '4105938',
+    email: 'etorrie@cougarnet.uh.edu',
     service: 'Digital Material Access',
     ticket: 'C067',
     waited: '15 min',
@@ -144,7 +222,8 @@ export const activeQueue = [
   {
     position: 5,
     name: 'Alyssa Brown',
-    studentId: 'UH-5294',
+    studentId: '5294761',
+    email: 'abrown23@cougarnet.uh.edu',
     service: 'CTAP Express',
     ticket: 'A109',
     waited: '9 min',
@@ -155,7 +234,8 @@ export const activeQueue = [
   {
     position: 6,
     name: 'Jordan Lee',
-    studentId: 'UH-6870',
+    studentId: '6870329',
+    email: 'jlee91@cougarnet.uh.edu',
     service: 'Physical CTAP Material Pickup',
     ticket: 'B216',
     waited: '24 min',
@@ -166,7 +246,8 @@ export const activeQueue = [
   {
     position: 7,
     name: 'Priya Shah',
-    studentId: 'UH-7021',
+    studentId: '7021845',
+    email: 'pshah7@cougarnet.uh.edu',
     service: 'Physical CTAP Material Pickup',
     ticket: 'B217',
     waited: '21 min',
@@ -177,7 +258,8 @@ export const activeQueue = [
   {
     position: 8,
     name: 'Marcus Hill',
-    studentId: 'UH-7348',
+    studentId: '7348620',
+    email: 'mhill12@cougarnet.uh.edu',
     service: 'CTAP Express',
     ticket: 'A110',
     waited: '7 min',
@@ -188,7 +270,8 @@ export const activeQueue = [
   {
     position: 9,
     name: 'Sofia Martinez',
-    studentId: 'UH-8196',
+    studentId: '8196403',
+    email: 'smartinez5@cougarnet.uh.edu',
     service: 'Digital Material Access',
     ticket: 'C068',
     waited: '12 min',
@@ -199,7 +282,8 @@ export const activeQueue = [
   {
     position: 10,
     name: 'Noah Johnson',
-    studentId: 'UH-9054',
+    studentId: '9054178',
+    email: 'njohnson18@cougarnet.uh.edu',
     service: 'Physical CTAP Material Pickup',
     ticket: 'B218',
     waited: '18 min',
