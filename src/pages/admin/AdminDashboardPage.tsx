@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom';
 
 import {
   dashboardStats,
+  hourlyServiceVolume,
   queueActivity,
+  reportStats,
+  serviceReportBreakdown,
   serviceSummaries,
 } from '../../design/queueSmartDesign';
 import './AdminDashboardPage.css';
@@ -39,7 +42,7 @@ function AdminDashboardPage() {
           </div>
 
           <nav className="admin-nav" aria-label="Admin navigation">
-            <Link className="admin-nav__link" to="/admin">
+            <Link className="admin-nav__link admin-nav__link--active" to="/admin">
               Dashboard
             </Link>
             <Link className="admin-nav__link" to="/admin/services">
@@ -98,6 +101,70 @@ function AdminDashboardPage() {
                 Review expired students
                 <span>Check</span>
               </Link>
+            </div>
+          </aside>
+        </section>
+
+        <section className="admin-reports" aria-labelledby="reports-title">
+          <div className="admin-panel admin-report-chart">
+            <div className="admin-panel__header">
+              <div>
+                <p className="admin-panel__eyebrow">Reports</p>
+                <h2 id="reports-title">Today&apos;s Service Volume</h2>
+              </div>
+              <span className="admin-status">186 served</span>
+            </div>
+
+            <div className="admin-report-stats">
+              {reportStats.map((stat) => (
+                <article className="admin-report-stat" key={stat.label}>
+                  <p className="admin-report-stat__label">{stat.label}</p>
+                  <p className="admin-report-stat__value">{stat.value}</p>
+                  <p className="admin-report-stat__detail">{stat.detail}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className="admin-volume-chart" aria-label="Students served by hour">
+              {hourlyServiceVolume.map((hour) => (
+                <div className="admin-volume-row" key={hour.hour}>
+                  <span className="admin-volume-row__hour">{hour.hour}</span>
+                  <div className="admin-volume-row__track">
+                    <div
+                      className="admin-volume-row__bar"
+                      style={{ width: `${hour.percent}%` }}
+                    />
+                  </div>
+                  <span className="admin-volume-row__count">
+                    {hour.served}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="admin-panel" aria-labelledby="breakdown-title">
+            <div className="admin-panel__header">
+              <div>
+                <p className="admin-panel__eyebrow">Breakdown</p>
+                <h2 id="breakdown-title">Served by Service</h2>
+              </div>
+            </div>
+
+            <div className="admin-breakdown-list">
+              {serviceReportBreakdown.map((item) => (
+                <article className="admin-breakdown-item" key={item.service}>
+                  <div>
+                    <p className="admin-breakdown-item__service">
+                      {item.service}
+                    </p>
+                    <p className="admin-breakdown-item__detail">
+                      {item.detail}
+                    </p>
+                  </div>
+                  <span>{item.served}</span>
+                </article>
+              ))}
             </div>
           </aside>
         </section>
