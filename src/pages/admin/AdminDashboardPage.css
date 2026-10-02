@@ -65,6 +65,16 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
+.admin-nav__link--active {
+  background: #ffffff;
+  color: #960c22;
+}
+
+.admin-nav__link--active:hover {
+  background: #ffffff;
+  color: #960c22;
+}
+
 .admin-main {
   max-width: 1180px;
   margin: 0 auto;
