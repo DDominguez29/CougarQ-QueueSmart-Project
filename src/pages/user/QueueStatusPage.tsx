@@ -1,10 +1,21 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 import { userQueue } from '../../design/queueSmartDesign';
+import { useNotifications } from '../../context/NotificationContext';
 
 import './QueueStatusPage.css';
 
 function QueueStatusPage() {
+  const { addNotification } = useNotifications();
+
+  const [status, setStatus] = useState(userQueue.status);
+
+  const handleStatusChange = () => {
+    setStatus('Ready');
+    addNotification('Your queue status changed to Ready.');
+  };
+
   return (
     <div className="queue-status-page">
       <header className="queue-status-header">
@@ -22,7 +33,9 @@ function QueueStatusPage() {
 
       <main className="queue-status-main">
         <section className="queue-status-card">
-          <p className="queue-status-eyebrow">CURRENT QUEUE</p>
+          <p className="queue-status-eyebrow">
+            CURRENT QUEUE
+          </p>
 
           <h2>{userQueue.service}</h2>
 
@@ -39,13 +52,20 @@ function QueueStatusPage() {
 
             <div>
               <p>Status</p>
-              <strong>{userQueue.status}</strong>
+              <strong>{status}</strong>
             </div>
           </div>
 
           <p className="queue-status-message">
             Please remain available. You will be notified when it is your turn.
           </p>
+
+          <button
+            className="leave-queue-button"
+            onClick={handleStatusChange}
+          >
+            Test Status Change
+          </button>
 
           <button className="leave-queue-button">
             Leave Queue
