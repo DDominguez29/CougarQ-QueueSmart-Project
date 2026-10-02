@@ -291,3 +291,104 @@ export const availableServices = [
     status: 'Normal',
   },
 ];
+
+export const serviceManagementStats = [
+  {
+    label: 'Queue Services',
+    value: '3',
+    detail: 'Visible to students',
+  },
+  {
+    label: 'Open Now',
+    value: '2',
+    detail: 'Pickup and Express',
+  },
+  {
+    label: 'Floor Support',
+    value: '1',
+    detail: 'No queue required',
+  },
+];
+
+export const managedServices = [
+  {
+    name: 'CTAP Pickup',
+    description: 'Full CTAP material pickup for students with multiple items.',
+    status: 'Open',
+    lane: 'Windows 1 and 2',
+    waiting: 28,
+    estimatedWait: '24 min',
+    intake: 'Queue required',
+    action: 'Pause',
+  },
+  {
+    name: 'CTAP Express',
+    description: 'One material pickup or quick CTAP question.',
+    status: 'Open',
+    lane: 'Window 3',
+    waiting: 9,
+    estimatedWait: '10 min',
+    intake: 'Queue required',
+    action: 'Pause',
+  },
+  {
+    name: 'Digital Access Support',
+    description: 'Login, eBook, platform access, and technical material help.',
+    status: 'Floor support',
+    lane: 'Support Table',
+    waiting: 0,
+    estimatedWait: 'Walk-up',
+    intake: 'No queue',
+    action: 'Edit',
+  },
+];
+
+export const serviceRoutingRules = [
+  {
+    situation: 'Student has multiple physical materials',
+    destination: 'CTAP Pickup',
+    note: 'Send to the standard queue for Window 1 or 2.',
+  },
+  {
+    situation: 'Student has one item or a quick CTAP question',
+    destination: 'CTAP Express',
+    note: 'Route to Window 3 to keep the main line moving.',
+  },
+  {
+    situation: 'Student has digital access or login issues',
+    destination: 'Support Table',
+    note: 'Do not require queue entry unless staff need escalation.',
+  },
+];
+
+export const serviceAdjustmentItems = [
+  'Pause CTAP Pickup when the line reaches the end of the store entrance.',
+  'Switch Window 3 to overflow pickup only if Express has fewer than 3 waiting.',
+  'Keep Digital Access Support visible as floor help so students do not join the wrong queue.',
+];
+
+export const employeeServiceNotes = [
+  {
+    title: 'Digital materials',
+    detail:
+      'Remind students that eBooks and online courseware may appear in their UH account or publisher portal instead of being picked up at the window.',
+  },
+  {
+    title: 'Access codes',
+    detail:
+      'Some codes are sent directly to students by email or attached to their digital material, so staff should verify the delivery method before sending them to pickup.',
+  },
+  {
+    title: 'Physical pickup',
+    detail:
+      'Only route students to CTAP Pickup when the item is a physical book, packet, kit, or printed material that must be handed out in store.',
+  },
+];
+
+export const knownDigitalMaterials = [
+  'Pearson MyLab access code',
+  'McGraw Hill Connect code',
+  'Cengage Unlimited code',
+  'WebAssign course access',
+  'VitalSource eBook',
+];
