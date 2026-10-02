@@ -1,0 +1,123 @@
+.queue-status-page {
+    min-height: 100vh;
+    background: #f6f7f9;
+    color: #1f2933;
+  }
+  
+  .queue-status-header {
+    background: #c8102e;
+    color: white;
+  }
+  
+  .queue-status-header__content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .queue-status-header h1 {
+    margin: 0;
+  }
+  
+  .queue-status-header p {
+    margin: 4px 0 0;
+  }
+  
+  .queue-status-back {
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  
+  .queue-status-main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  
+  .queue-status-card {
+    background: white;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+  }
+  
+  .queue-status-eyebrow {
+    color: #c8102e;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  
+  .queue-status-card h2 {
+    margin-bottom: 30px;
+  }
+  
+  .queue-position {
+    margin-bottom: 30px;
+  }
+  
+  .queue-position p {
+    margin-bottom: 8px;
+    color: #5d6673;
+  }
+  
+  .queue-position span {
+    font-size: 4rem;
+    font-weight: 700;
+    color: #c8102e;
+  }
+  
+  .queue-status-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .queue-status-info div {
+    background: #f6f7f9;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+    padding: 18px;
+  }
+  
+  .queue-status-info p {
+    margin: 0 0 8px;
+    color: #5d6673;
+  }
+  
+  .queue-status-message {
+    color: #5d6673;
+    margin: 24px 0;
+  }
+  
+  .leave-queue-button {
+    border: none;
+    border-radius: 6px;
+    padding: 12px 20px;
+    background: #c8102e;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .leave-queue-button:hover {
+    background: #960c22;
+  }
+  
+  @media (max-width: 600px) {
+    .queue-status-header__content {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+  
+    .queue-status-info {
+      grid-template-columns: 1fr;
+    }
+  }
