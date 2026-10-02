@@ -1,0 +1,123 @@
+.join-queue-page {
+    min-height: 100vh;
+    background: #f6f7f9;
+    color: #1f2933;
+  }
+  
+  .join-queue-header {
+    background: #c8102e;
+    color: white;
+  }
+  
+  .join-queue-header__content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .join-queue-header h1 {
+    margin: 0;
+  }
+  
+  .join-queue-header p {
+    margin: 4px 0 0;
+  }
+  
+  .join-queue-back {
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  
+  .join-queue-main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  
+  .join-queue-panel {
+    background: white;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    padding: 28px;
+  }
+  
+  .join-queue-eyebrow {
+    margin: 0 0 6px;
+    color: #c8102e;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  
+  .join-queue-panel h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+  
+  .join-service-list {
+    display: grid;
+    gap: 16px;
+  }
+  
+  .join-service-card {
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+    padding: 20px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .join-service-card h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  
+  .join-service-card p {
+    margin: 4px 0;
+    color: #5d6673;
+  }
+  
+  .join-service-card__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .join-service-status {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  
+  .join-queue-button {
+    border: none;
+    border-radius: 6px;
+    padding: 11px 18px;
+    background: #c8102e;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .join-queue-button:hover {
+    background: #960c22;
+  }
+  
+  @media (max-width: 650px) {
+    .join-queue-header__content,
+    .join-service-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+  
+    .join-service-card__right {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }

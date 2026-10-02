@@ -77,3 +77,31 @@ export const queueActivity = [
     waited: '15 min',
   },
 ];
+
+export const userQueue = {
+  service: 'Physical CTAP Material Pickup',
+  position: 4,
+  estimatedWait: '12 min',
+  status: 'Waiting',
+};
+
+export const availableServices = [
+  {
+    name: 'Physical CTAP Material Pickup',
+    waiting: 28,
+    estimatedWait: '24 min',
+    status: 'High demand',
+  },
+  {
+    name: 'CTAP Express',
+    waiting: 9,
+    estimatedWait: '10 min',
+    status: 'Normal',
+  },
+  {
+    name: 'Bookstore Support',
+    waiting: 5,
+    estimatedWait: '8 min',
+    status: 'Normal',
+  },
+];
