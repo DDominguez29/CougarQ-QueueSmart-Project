@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { availableServices } from '../../design/queueSmartDesign';
 
 import './JoinQueuePage.css';
-
+import { useNotifications } from '../../context/NotificationContext';
 function JoinQueuePage() {
+   const { addNotification } = useNotifications();
   return (
     <div className="join-queue-page">
       <header className="join-queue-header">
@@ -39,8 +40,11 @@ function JoinQueuePage() {
                     {service.status}
                   </span>
 
-                  <button className="join-queue-button">
-                    Join Queue
+                  <button className="join-queue-button"
+                  onClick={() =>
+                       addNotification(`You joined the ${service.name} queue.`) }
+                    >
+                    <Link to="/notifications">Join Queue</Link>
                   </button>
                 </div>
               </article>

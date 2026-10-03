@@ -12,6 +12,8 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ServiceManagementPage from './pages/admin/ServiceManagementPage';
 import QueueManagementPage from './pages/admin/QueueManagementPage';
 
+import Notification from './pages/Notifications/notification';
+
 function App() {
   return (
     <Routes>
@@ -24,7 +26,8 @@ function App() {
       <Route path="/join-queue" element={<JoinQueuePage />} />
       <Route path="/queue-status" element={<QueueStatusPage />} />
       <Route path="/history" element={<HistoryPage />} />
-
+        {/* User */}
+        <Route path="/notifications" element={<Notification />} />
       {/* Admin */}
       <Route path="/admin" element={<AdminDashboardPage />} />
       <Route
