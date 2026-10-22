@@ -3,19 +3,30 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev:server": "node --watch server/src/index.ts",
+    "start:server": "node server/src/index.ts",
+    "build": "tsc -b && npm run typecheck:server && vite build",
+    "typecheck:server": "tsc -p server/tsconfig.json",
     "lint": "eslint .",
+    "lint:server": "eslint server",
+    "test": "node --test server/tests/*.test.ts",
+    "test:coverage": "node --experimental-test-coverage --test --test-coverage-include=server/src/** server/tests/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
+    "express": "^5.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

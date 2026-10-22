@@ -73,3 +73,9 @@ npm run build
 ## Team Workflow
 
 The team should use feature branches and pull requests so work can be reviewed before it is merged into the main branch. More detailed setup and Git instructions are available in `TEAM_GUIDE.md`.
+
+## Assignment 3 Backend
+
+The shared Node.js, Express, and TypeScript foundation lives in `server/`. See [the backend guide](server/README.md) for module ownership, API conventions, in-memory data contracts, and tests. Feature endpoints are the next implementation step.
+
+Use Node.js 22.18+ and run `npm install` from this repository root. Start the API with `npm run dev:server` and the frontend with `npm run dev` in another terminal. Check the API at `http://127.0.0.1:3001/api/health`.
