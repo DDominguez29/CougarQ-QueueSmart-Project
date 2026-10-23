@@ -8,7 +8,7 @@ import {
   validateLoginEmail,
   validateLoginPassword,
 } from './authValidation';
-import { findAccount } from './mockAuth';
+import { loginRequest } from './authApi';
 
 type LoginField = 'email' | 'password';
 type LoginErrors = Partial<Record<LoginField, string>>;
@@ -39,6 +39,7 @@ function LoginPage() {
     password: false,
   });
   const [formError, setFormError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const errors: LoginErrors = {
     email: validateLoginEmail(values.email),
@@ -54,19 +55,23 @@ function LoginPage() {
     setTouched((current) => ({ ...current, [field]: true }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTouched({ email: true, password: true });
 
-    if (errors.email || errors.password) return;
+    if (errors.email || errors.password || submitting) return;
 
-    const account = findAccount(values.email, values.password);
-    if (!account) {
-      setFormError('Email or password is incorrect.');
-      return;
+    setSubmitting(true);
+    try {
+      const user = await loginRequest(values.email, values.password);
+      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : 'Unable to sign in.',
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    navigate(account.role === 'admin' ? '/admin' : '/dashboard');
   }
 
   return (
@@ -120,8 +125,8 @@ function LoginPage() {
           required
         />
 
-        <button className="auth-submit" type="submit">
-          Sign in
+        <button className="auth-submit" type="submit" disabled={submitting}>
+          {submitting ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 

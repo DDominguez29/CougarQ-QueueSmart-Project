@@ -1,6 +1,8 @@
 import express from 'express';
 import { createStore, type Store } from './data/store.ts';
 import { errorHandler, notFound } from './middleware/errors.ts';
+import { createAuthRouter } from './modules/auth/auth.routes.ts';
+import { createWaitTimeRouter } from './modules/wait-time/wait-time.routes.ts';
 
 export function createApp(store: Store = createStore()) {
   const app = express();
@@ -9,6 +11,9 @@ export function createApp(store: Store = createStore()) {
 
   // Mount feature routers here, passing this same store into each router factory.
   app.locals.store = store;
+
+  app.use('/api/auth', createAuthRouter(store));
+  app.use('/api/wait-time', createWaitTimeRouter(store));
 
   app.get('/api/health', (_request, response) => {
     response.json({ data: { status: 'ok' } });

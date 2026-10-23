@@ -11,7 +11,7 @@ import {
   validateNewPassword,
   validateRegisterEmail,
 } from './authValidation';
-import { emailExists, registerAccount } from './mockAuth';
+import { registerRequest } from './authApi';
 
 type RegisterField = 'fullName' | 'email' | 'password' | 'confirmPassword';
 type RegisterErrors = Partial<Record<RegisterField, string>>;
@@ -34,6 +34,7 @@ function RegisterPage() {
   });
   const [touched, setTouched] = useState(initialTouched);
   const [formError, setFormError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const errors: RegisterErrors = {
     fullName: validateFullName(values.fullName),
@@ -58,7 +59,7 @@ function RegisterPage() {
     return touched[field] ? errors[field] : undefined;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTouched({
       fullName: true,
@@ -67,17 +68,23 @@ function RegisterPage() {
       confirmPassword: true,
     });
 
-    if (Object.values(errors).some(Boolean)) return;
+    if (Object.values(errors).some(Boolean) || submitting) return;
 
-    if (emailExists(values.email)) {
-      setFormError('An account with this email already exists.');
-      return;
+    setSubmitting(true);
+    try {
+      const user = await registerRequest(
+        values.fullName.trim(),
+        values.email.trim(),
+        values.password,
+      );
+      navigate('/login', { state: { registeredEmail: user.email } });
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : 'Unable to create your account.',
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    registerAccount(values.fullName, values.email, values.password);
-    navigate('/login', {
-      state: { registeredEmail: values.email.trim().toLowerCase() },
-    });
   }
 
   return (
@@ -156,8 +163,8 @@ function RegisterPage() {
           required
         />
 
-        <button className="auth-submit" type="submit">
-          Create account
+        <button className="auth-submit" type="submit" disabled={submitting}>
+          {submitting ? 'Creating account...' : 'Create account'}
         </button>
       </form>
     </AuthLayout>
