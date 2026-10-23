@@ -1,19 +1,4 @@
-<<<<<<< HEAD
 import { useEffect, useState } from 'react';
-<<<<<<< Updated upstream
-=======
-import AdminHeader from './AdminHeader';
-
-import {
-  employeeServiceNotes,
-  knownDigitalMaterials,
-  managedServices,
-  serviceAdjustmentItems,
-  serviceManagementStats,
-  serviceRoutingRules,
-} from '../../design/queueSmartDesign';
-import './AdminDashboardPage.css';
->>>>>>> origin/main
 import './ServiceManagementPage.css';
 
 type Service = {
@@ -22,25 +7,11 @@ type Service = {
   description: string;
   expectedDurationMinutes: number;
   priority: number;
-=======
-
-import './ServiceManagementPage.css';
-
-type PriorityLevel = 'Low' | 'Normal' | 'High';
-
-type Service = {
-  id: number;
-  name: string;
-  description: string;
-  expectedDuration: number;
-  priorityLevel: PriorityLevel;
->>>>>>> Stashed changes
 };
 
 type ServiceForm = {
   name: string;
   description: string;
-<<<<<<< Updated upstream
   expectedDurationMinutes: string;
   priority: string;
 };
@@ -50,40 +21,24 @@ type ApiErrorResponse = {
     code: string;
     message: string;
   };
-=======
-  expectedDuration: string;
-  priorityLevel: PriorityLevel;
->>>>>>> Stashed changes
 };
 
 const emptyForm: ServiceForm = {
   name: '',
   description: '',
-<<<<<<< Updated upstream
   expectedDurationMinutes: '',
   priority: '',
-=======
-  expectedDuration: '',
-  priorityLevel: 'Normal',
->>>>>>> Stashed changes
 };
 
 function ServiceManagementPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [formData, setFormData] = useState<ServiceForm>(emptyForm);
-<<<<<<< Updated upstream
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-=======
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
->>>>>>> Stashed changes
 
   useEffect(() => {
     void fetchServices();
@@ -91,21 +46,22 @@ function ServiceManagementPage() {
 
   async function fetchServices() {
     try {
-<<<<<<< Updated upstream
       setLoading(true);
       setError('');
 
       const response = await fetch('/api/services');
 
       if (!response.ok) {
-        const result: ApiErrorResponse = await response.json();
+        const result = (await response.json()) as ApiErrorResponse;
 
         throw new Error(
           result.error?.message ?? 'Unable to load services.',
         );
       }
 
-      const result: { data: Service[] } = await response.json();
+      const result = (await response.json()) as {
+        data: Service[];
+      };
 
       setServices(result.data);
     } catch (err) {
@@ -116,37 +72,13 @@ function ServiceManagementPage() {
       }
     } finally {
       setLoading(false);
-=======
-      setError('');
-
-      const response = await fetch(
-        'http://localhost:3001/api/services'
-      );
-
-      if (!response.ok) {
-        throw new Error('Unable to load services.');
-      }
-
-      const data: Service[] = await response.json();
-      setServices(data);
-    } catch (err) {
-      console.error(err);
-      setError(
-        'Could not load services. Make sure the backend server is running.'
-      );
->>>>>>> Stashed changes
     }
   }
 
   function handleChange(
     event:
       | React.ChangeEvent<HTMLInputElement>
-<<<<<<< Updated upstream
       | React.ChangeEvent<HTMLTextAreaElement>,
-=======
-      | React.ChangeEvent<HTMLTextAreaElement>
-      | React.ChangeEvent<HTMLSelectElement>
->>>>>>> Stashed changes
   ) {
     const { name, value } = event.target;
 
@@ -159,7 +91,6 @@ function ServiceManagementPage() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-<<<<<<< Updated upstream
     setError('');
     setMessage('');
 
@@ -183,44 +114,18 @@ function ServiceManagementPage() {
       !Number.isFinite(expectedDurationMinutes) ||
       expectedDurationMinutes <= 0
     ) {
-      setError(
-        'Expected duration must be greater than 0.',
-      );
-      return;
-    }
-
-    if (
-      !Number.isInteger(priority) ||
-      priority < 0
-    ) {
-      setError(
-        'Priority must be a non-negative integer.',
-      );
-=======
-    setMessage('');
-    setError('');
-
-    if (
-      !formData.name.trim() ||
-      !formData.description.trim() ||
-      !formData.expectedDuration
-    ) {
-      setError('Please complete all fields.');
-      return;
-    }
-
-    const duration = Number(formData.expectedDuration);
-
-    if (!Number.isFinite(duration) || duration <= 0) {
       setError('Expected duration must be greater than 0.');
->>>>>>> Stashed changes
+      return;
+    }
+
+    if (!Number.isInteger(priority) || priority < 0) {
+      setError('Priority must be a non-negative integer.');
       return;
     }
 
     const serviceData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-<<<<<<< Updated upstream
       expectedDurationMinutes,
       priority,
     };
@@ -233,18 +138,6 @@ function ServiceManagementPage() {
       const url = isEditing
         ? `/api/services/${editingId}`
         : '/api/services';
-=======
-      expectedDuration: duration,
-      priorityLevel: formData.priorityLevel,
-    };
-
-    try {
-      const isEditing = editingId !== null;
-
-      const url = isEditing
-        ? `http://localhost:3001/api/services/${editingId}`
-        : 'http://localhost:3001/api/services';
->>>>>>> Stashed changes
 
       const response = await fetch(url, {
         method: isEditing ? 'PUT' : 'POST',
@@ -254,7 +147,6 @@ function ServiceManagementPage() {
         body: JSON.stringify(serviceData),
       });
 
-<<<<<<< Updated upstream
       const result = await response.json();
 
       if (!response.ok) {
@@ -265,19 +157,12 @@ function ServiceManagementPage() {
             'Unable to save service.',
         );
 
-=======
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Unable to save service.');
->>>>>>> Stashed changes
         return;
       }
 
       setMessage(
         isEditing
           ? 'Service updated successfully.'
-<<<<<<< Updated upstream
           : 'Service created successfully.',
       );
 
@@ -286,25 +171,9 @@ function ServiceManagementPage() {
 
       await fetchServices();
     } catch {
-      setError(
-        'Unable to connect to the service API.',
-      );
+      setError('Unable to connect to the service API.');
     } finally {
       setSaving(false);
-=======
-          : 'Service created successfully.'
-      );
-
-      setFormData(emptyForm);
-      setEditingId(null);
-
-      await fetchServices();
-    } catch (err) {
-      console.error(err);
-      setError(
-        'Could not save service. Make sure the backend server is running.'
-      );
->>>>>>> Stashed changes
     }
   }
 
@@ -314,15 +183,10 @@ function ServiceManagementPage() {
     setFormData({
       name: service.name,
       description: service.description,
-<<<<<<< Updated upstream
       expectedDurationMinutes: String(
         service.expectedDurationMinutes,
       ),
       priority: String(service.priority),
-=======
-      expectedDuration: String(service.expectedDuration),
-      priorityLevel: service.priorityLevel,
->>>>>>> Stashed changes
     });
 
     setMessage('');
@@ -342,23 +206,14 @@ function ServiceManagementPage() {
   }
 
   return (
-<<<<<<< HEAD
     <div className="service-page">
       <main className="service-main">
         <section className="service-panel">
-<<<<<<< Updated upstream
           <p className="service-eyebrow">
             SERVICES
           </p>
-=======
-          <p className="service-eyebrow">SERVICES</p>
->>>>>>> Stashed changes
 
           <h1>Service Management</h1>
-=======
-    <div className="admin-dashboard service-page">
-      <AdminHeader />
->>>>>>> origin/main
 
           <p className="service-description">
             Create and update QueueSmart services.
@@ -376,14 +231,10 @@ function ServiceManagementPage() {
             </p>
           )}
 
-<<<<<<< Updated upstream
           <form
             className="service-form"
             onSubmit={handleSubmit}
           >
-=======
-          <form className="service-form" onSubmit={handleSubmit}>
->>>>>>> Stashed changes
             <label>
               Service Name
               <input
@@ -391,10 +242,7 @@ function ServiceManagementPage() {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-<<<<<<< Updated upstream
                 maxLength={100}
-=======
->>>>>>> Stashed changes
                 placeholder="Example: Book Pickup"
                 required
               />
@@ -406,10 +254,7 @@ function ServiceManagementPage() {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-<<<<<<< Updated upstream
                 maxLength={500}
-=======
->>>>>>> Stashed changes
                 placeholder="Describe the service"
                 required
               />
@@ -419,15 +264,8 @@ function ServiceManagementPage() {
               Expected Duration (minutes)
               <input
                 type="number"
-<<<<<<< Updated upstream
                 name="expectedDurationMinutes"
-                value={
-                  formData.expectedDurationMinutes
-                }
-=======
-                name="expectedDuration"
-                value={formData.expectedDuration}
->>>>>>> Stashed changes
+                value={formData.expectedDurationMinutes}
                 onChange={handleChange}
                 min="1"
                 placeholder="15"
@@ -436,7 +274,6 @@ function ServiceManagementPage() {
             </label>
 
             <label>
-<<<<<<< Updated upstream
               Priority
               <input
                 type="number"
@@ -451,29 +288,13 @@ function ServiceManagementPage() {
             </label>
 
             <p className="service-description">
-              Higher priority numbers are ranked
-              first.
+              Higher priority numbers are ranked first.
             </p>
 
-=======
-              Priority Level
-              <select
-                name="priorityLevel"
-                value={formData.priorityLevel}
-                onChange={handleChange}
-              >
-                <option value="Low">Low</option>
-                <option value="Normal">Normal</option>
-                <option value="High">High</option>
-              </select>
-            </label>
-
->>>>>>> Stashed changes
             <div className="service-form__actions">
               <button
                 type="submit"
                 className="service-submit-button"
-<<<<<<< Updated upstream
                 disabled={saving}
               >
                 {saving
@@ -481,12 +302,6 @@ function ServiceManagementPage() {
                   : editingId !== null
                     ? 'Update Service'
                     : 'Create Service'}
-=======
-              >
-                {editingId !== null
-                  ? 'Update Service'
-                  : 'Create Service'}
->>>>>>> Stashed changes
               </button>
 
               {editingId !== null && (
@@ -494,10 +309,7 @@ function ServiceManagementPage() {
                   type="button"
                   className="service-cancel-button"
                   onClick={handleCancelEdit}
-<<<<<<< Updated upstream
                   disabled={saving}
-=======
->>>>>>> Stashed changes
                 >
                   Cancel
                 </button>
@@ -507,7 +319,6 @@ function ServiceManagementPage() {
         </section>
 
         <section className="service-panel">
-<<<<<<< Updated upstream
           <p className="service-eyebrow">
             CURRENT SERVICES
           </p>
@@ -519,13 +330,6 @@ function ServiceManagementPage() {
               Loading services...
             </p>
           ) : services.length === 0 ? (
-=======
-          <p className="service-eyebrow">CURRENT SERVICES</p>
-
-          <h2>Service List</h2>
-
-          {services.length === 0 && !error ? (
->>>>>>> Stashed changes
             <p className="service-description">
               No services have been created yet.
             </p>
@@ -540,46 +344,23 @@ function ServiceManagementPage() {
                     <div className="service-card__heading">
                       <h3>{service.name}</h3>
 
-<<<<<<< Updated upstream
                       <span className="service-priority">
                         Priority {service.priority}
-=======
-                      <span
-                        className={`service-priority service-priority--${service.priorityLevel.toLowerCase()}`}
-                      >
-                        {service.priorityLevel}
->>>>>>> Stashed changes
                       </span>
                     </div>
 
                     <p>{service.description}</p>
 
                     <p>
-<<<<<<< Updated upstream
-                      <strong>
-                        Expected Duration:
-                      </strong>{' '}
-                      {
-                        service.expectedDurationMinutes
-                      }{' '}
-                      minutes
-=======
                       <strong>Expected Duration:</strong>{' '}
-                      {service.expectedDuration} minutes
->>>>>>> Stashed changes
+                      {service.expectedDurationMinutes} minutes
                     </p>
                   </div>
 
                   <button
                     type="button"
                     className="service-edit-button"
-<<<<<<< Updated upstream
-                    onClick={() =>
-                      handleEdit(service)
-                    }
-=======
                     onClick={() => handleEdit(service)}
->>>>>>> Stashed changes
                   >
                     Edit
                   </button>
