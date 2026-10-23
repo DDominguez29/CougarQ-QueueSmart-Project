@@ -11,6 +11,7 @@ import HistoryPage from './pages/user/HistoryPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ServiceManagementPage from './pages/admin/ServiceManagementPage';
 import QueueManagementPage from './pages/admin/QueueManagementPage';
+import ReportsPage from './pages/admin/ReportsPage';
 
 import Notification from './pages/Notifications/notification';
 
@@ -30,6 +31,7 @@ function App() {
         <Route path="/notifications" element={<Notification />} />
       {/* Admin */}
       <Route path="/admin" element={<AdminDashboardPage />} />
+      <Route path="/admin/reports" element={<ReportsPage />} />
       <Route
         path="/admin/services"
         element={<ServiceManagementPage />}

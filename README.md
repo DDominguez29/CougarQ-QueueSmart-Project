@@ -76,6 +76,6 @@ The team should use feature branches and pull requests so work can be reviewed b
 
 ## Assignment 3 Backend
 
-The shared Node.js, Express, and TypeScript foundation lives in `server/`. See [the backend guide](server/README.md) for module ownership, API conventions, in-memory data contracts, and tests. Feature endpoints are the next implementation step.
+The Node.js, Express, and TypeScript backend lives in `server/`. Administrator queue management, user history, and administrator daily reporting APIs are implemented, with authentication and the other modules awaiting team integration. Reports include completed visits, unique people served, and average queue wait before service begins. See [the backend guide](server/README.md) for module ownership, API conventions, in-memory data contracts, and tests.
 
 Use Node.js 22.18+ and run `npm install` from this repository root. Start the API with `npm run dev:server` and the frontend with `npm run dev` in another terminal. Check the API at `http://127.0.0.1:3001/api/health`.
