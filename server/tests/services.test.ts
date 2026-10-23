@@ -7,6 +7,29 @@ import { createApp } from '../src/app.ts';
 import { createStore } from '../src/data/store.ts';
 import type { Identity } from '../src/shared/models.ts';
 
+type ServiceData = {
+  id: string;
+  name: string;
+  description: string;
+  expectedDurationMinutes: number;
+  priority: number;
+};
+
+type ServiceResponse = {
+  data: ServiceData;
+};
+
+type ServiceListResponse = {
+  data: ServiceData[];
+};
+
+type ErrorResponse = {
+  error: {
+    code: string;
+    message: string;
+  };
+};
+
 const openServers: Server[] = [];
 
 afterEach(async () => {
@@ -85,7 +108,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 200);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ServiceListResponse;
 
     assert.equal(body.data.length, 1);
     assert.equal(body.data[0].name, 'CTAP Express');
@@ -111,11 +135,19 @@ describe('service management API', () => {
     });
 
     const response = await fetch(`${baseUrl}/api/services`);
-    const body = await response.json();
+
+    const body =
+      (await response.json()) as ServiceListResponse;
 
     assert.equal(response.status, 200);
-    assert.equal(body.data[0].name, 'High Priority Service');
-    assert.equal(body.data[1].name, 'Low Priority Service');
+    assert.equal(
+      body.data[0].name,
+      'High Priority Service',
+    );
+    assert.equal(
+      body.data[1].name,
+      'Low Priority Service',
+    );
   });
 
   it('allows an administrator to create a service', async () => {
@@ -133,14 +165,18 @@ describe('service management API', () => {
 
     assert.equal(response.status, 201);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ServiceResponse;
 
     assert.equal(body.data.name, 'Book Pickup');
     assert.equal(
       body.data.description,
       'Pickup reserved library books.',
     );
-    assert.equal(body.data.expectedDurationMinutes, 10);
+    assert.equal(
+      body.data.expectedDurationMinutes,
+      10,
+    );
     assert.equal(body.data.priority, 2);
     assert.equal(typeof body.data.id, 'string');
   });
@@ -158,7 +194,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 401);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.deepEqual(body, {
       error: {
@@ -183,7 +220,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 403);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.deepEqual(body, {
       error: {
@@ -213,7 +251,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 400);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.equal(
       body.error.code,
@@ -252,16 +291,24 @@ describe('service management API', () => {
 
     assert.equal(response.status, 200);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ServiceResponse;
 
     assert.equal(body.data.id, 'service-1');
     assert.equal(body.data.name, 'Updated Service');
-    assert.equal(body.data.expectedDurationMinutes, 20);
+    assert.equal(
+      body.data.expectedDurationMinutes,
+      20,
+    );
     assert.equal(body.data.priority, 5);
 
-    const storedService = store.services.get('service-1');
+    const storedService =
+      store.services.get('service-1');
 
-    assert.equal(storedService?.name, 'Updated Service');
+    assert.equal(
+      storedService?.name,
+      'Updated Service',
+    );
   });
 
   it('rejects updates from a student', async () => {
@@ -289,6 +336,11 @@ describe('service management API', () => {
     );
 
     assert.equal(response.status, 403);
+
+    const body =
+      (await response.json()) as ErrorResponse;
+
+    assert.equal(body.error.code, 'FORBIDDEN');
   });
 
   it('returns 404 when updating a service that does not exist', async () => {
@@ -309,7 +361,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 404);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.deepEqual(body, {
       error: {
@@ -337,7 +390,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 400);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.equal(
       body.error.code,
@@ -363,7 +417,8 @@ describe('service management API', () => {
 
     assert.equal(response.status, 400);
 
-    const body = await response.json();
+    const body =
+      (await response.json()) as ErrorResponse;
 
     assert.equal(
       body.error.code,
