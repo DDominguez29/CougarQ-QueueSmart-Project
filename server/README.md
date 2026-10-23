@@ -1,6 +1,6 @@
 # QueueSmart backend
 
-Node.js + Express + TypeScript, with in-memory storage for Assignment 3. This is the shared foundation; feature APIs and authentication are not implemented yet. No real database is needed for A3.
+Node.js + Express + TypeScript, with in-memory storage for Assignment 3. Administrator queue management, user history, and administrator reporting APIs are implemented. Authentication, user join/leave, and the other modules are separate team integration work. No real database is needed for A3.
 
 ## Run from the repository root
 
@@ -39,6 +39,7 @@ server/
       wait-time/
       notifications/
       history/
+      reports/
   tests/                  Backend tests
   tsconfig.json
 ```
@@ -67,7 +68,23 @@ npm run test:coverage
 npm run build
 ```
 
-The initial tests exercise health and HTTP error behavior. Add unit tests for each module's business rules and validation as it is implemented. A3 targets 70-80% backend coverage; the starter HTTP tests alone do not demonstrate completed module coverage. The native coverage command is experimental in Node 22 and prints its report to the terminal.
+Tests exercise health/HTTP errors, queue ordering and transitions, history isolation, validation, permissions, and concurrent serve requests. Add tests as the remaining modules are implemented. A3 targets 70-80% backend coverage. The native coverage command is experimental in Node 22 and prints coverage for loaded source files to the terminal; the listener entry point is not part of this test report.
 
 Run the full `npm run lint` before merging. The existing frontend currently has a Fast Refresh lint error in `src/context/NotificationContext.tsx`; it predates this scaffold.
+
+## Authentication integration
+
+`createApp(store, { resolveIdentity })` accepts the authentication module's server-side resolver. It receives an Express request and returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. The default is unauthenticated: protected endpoints return `401` until auth connects this resolver in `index.ts`. Header roles and body user IDs are never authentication.
+
+The frontend API client (`src/api/client.ts`) sends same-origin cookies via `credentials: 'include'`. If auth uses bearer tokens, connect its token handling centrally in that client. The current frontend mock login does not authenticate backend requests. Test credentials exist only in test fixtures.
+
+## Queue and history integration
+
+See the queue/history module guides for endpoints. `src/pages/admin/QueueManagementPage.tsx` and `src/pages/user/HistoryPage.tsx` now read backend responses with loading, empty, and error states. The user dashboard links to history.
+
+The store still starts empty. The service owner must populate `store.services`, and the join/leave owner must write `store.queueEntries`. Store UTC ISO dates, larger numeric priorities first, and unique participation IDs for every visit. Set the optional `serviceName` snapshot on join. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Retain all finished records for history/reports.
+
+## Administrator reporting
+
+`GET /api/admin/reports` powers `/admin/reports` and today's dashboard summary. It requires an administrator, defaults to today in America/Chicago, and accepts `startDate`, `endDate`, optional `serviceId`, and `page`. See `modules/reports/README.md` for definitions and examples. Reports use only backend participation records; restarting the in-memory server clears them. Authentication integration is still required for the normal browser flow.
 
