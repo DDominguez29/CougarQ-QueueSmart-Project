@@ -2,9 +2,18 @@ import express from 'express';
 
 import { createStore, type Store } from './data/store.ts';
 import { errorHandler, notFound } from './middleware/errors.ts';
+import { identityMiddleware, type IdentityResolver } from './middleware/identity.ts';
+
+import { createHistoryRouter } from './modules/history/history.routes.ts';
+import { createAdminQueueRouter } from './modules/queue/queue.routes.ts';
+import { createReportsRouter } from './modules/reports/reports.routes.ts';
 import { createServicesRouter } from './modules/services/services.routes.ts';
 
-export function createApp(store: Store = createStore()) {
+export interface AppOptions {
+  resolveIdentity?: IdentityResolver;
+}
+
+export function createApp(store: Store = createStore(), options: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -20,7 +29,12 @@ export function createApp(store: Store = createStore()) {
     });
   });
 
+  app.use('/api', identityMiddleware(options.resolveIdentity));
+
   app.use('/api/services', createServicesRouter(store));
+  app.use('/api/history', createHistoryRouter(store));
+  app.use('/api/admin/reports', createReportsRouter(store));
+  app.use('/api', createAdminQueueRouter(store));
 
   app.use(notFound);
   app.use(errorHandler);

@@ -1,5 +1,19 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 <<<<<<< Updated upstream
+=======
+import AdminHeader from './AdminHeader';
+
+import {
+  employeeServiceNotes,
+  knownDigitalMaterials,
+  managedServices,
+  serviceAdjustmentItems,
+  serviceManagementStats,
+  serviceRoutingRules,
+} from '../../design/queueSmartDesign';
+import './AdminDashboardPage.css';
+>>>>>>> origin/main
 import './ServiceManagementPage.css';
 
 type Service = {
@@ -328,6 +342,7 @@ function ServiceManagementPage() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="service-page">
       <main className="service-main">
         <section className="service-panel">
@@ -340,6 +355,10 @@ function ServiceManagementPage() {
 >>>>>>> Stashed changes
 
           <h1>Service Management</h1>
+=======
+    <div className="admin-dashboard service-page">
+      <AdminHeader />
+>>>>>>> origin/main
 
           <p className="service-description">
             Create and update QueueSmart services.
