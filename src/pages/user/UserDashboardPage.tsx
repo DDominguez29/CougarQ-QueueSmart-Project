@@ -39,6 +39,9 @@ function UserDashboardPage() {
             <Link className="user-nav__link" to="/queue-status">
               Queue Status
             </Link>
+            <Link className="user-nav__link" to="/history">
+              History
+            </Link>
           </nav>
         </div>
       </header>

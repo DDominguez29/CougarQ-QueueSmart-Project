@@ -1,239 +1,71 @@
 import { Link } from 'react-router-dom';
-
-import {
-  dashboardStats,
-  hourlyServiceVolume,
-  queueActivity,
-  reportStats,
-  serviceReportBreakdown,
-  serviceSummaries,
-} from '../../design/queueSmartDesign';
+import type { AdminReport, QueueOverview } from '../../../server/src/shared/models';
+import { displayDate, displayMinutes, STORE_TIME_LABEL } from '../../api/display';
+import { useApiResource } from '../../hooks/useApiResource';
+import AdminHeader from './AdminHeader';
 import './AdminDashboardPage.css';
-
-function getStatusClass(status: string) {
-  if (status === 'High demand' || status === 'Expired') {
-    return 'admin-badge admin-badge--warning';
-  }
-
-  if (status === 'Summoned' || status === 'Normal') {
-    return 'admin-badge admin-badge--success';
-  }
-
-  return 'admin-badge admin-badge--danger';
-}
+import './ReportsPage.css';
 
 function AdminDashboardPage() {
+  const queues = useApiResource<QueueOverview>('/api/admin/queue');
+  const report = useApiResource<AdminReport>('/api/admin/reports');
+  const error = report.error ?? queues.error;
+  const loading = report.loading || queues.loading;
+  const stats = [
+    { label: 'Users waiting now', value: queues.data?.totalWaiting ?? '—', detail: 'Across all services' },
+    { label: 'Served visits today', value: report.data?.summary.servedVisits ?? '—', detail: 'Completed visits' },
+    { label: 'Unique people served', value: report.data?.summary.uniquePeopleServed ?? '—', detail: 'Repeat visits counted once' },
+    { label: 'Average queue wait', value: displayMinutes(report.data?.summary.averageWaitMinutes), detail: 'Before service begins' },
+  ];
+
   return (
     <div className="admin-dashboard">
-      <header className="admin-header">
-        <div className="admin-header__content">
-          <div className="admin-brand">
-            <img
-              className="admin-brand__logo"
-              src="/logos/uh-logo.png"
-              alt="University of Houston logo"
-            />
-            <div>
-              <p className="admin-brand__name">CougarQ Admin</p>
-              <p className="admin-brand__subtitle">
-                University of Houston Campus Store/Bookstore
-              </p>
-            </div>
-          </div>
-
-          <nav className="admin-nav" aria-label="Admin navigation">
-            <Link className="admin-nav__link admin-nav__link--active" to="/admin">
-              Dashboard
-            </Link>
-            <Link className="admin-nav__link" to="/admin/services">
-              Services
-            </Link>
-            <Link className="admin-nav__link" to="/admin/queue">
-              Queue
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+      <AdminHeader />
       <main className="admin-main">
         <section className="admin-overview" aria-labelledby="dashboard-title">
           <div className="admin-panel">
-            <div className="admin-panel__header">
+            <div className="admin-panel__header reports-heading">
               <div>
-                <p className="admin-panel__eyebrow">Today</p>
+                <p className="admin-panel__eyebrow">{report.data?.startDate ?? 'Today'} · {STORE_TIME_LABEL}</p>
                 <h1 id="dashboard-title">Admin Dashboard</h1>
-                <p className="admin-panel__note">
-                  Track wait times, service demand, and queue activity during
-                  CTAP pickup rushes.
-                </p>
+                <p className="admin-panel__note">Current queues and today's completed visits.</p>
               </div>
-              <span className="admin-status">Live queue view</span>
+              <button className="reports-button" type="button" disabled={loading} onClick={() => { queues.refresh(); report.refresh(); }}>{loading ? 'Loading…' : 'Refresh'}</button>
             </div>
-
             <div className="admin-stats">
-              {dashboardStats.map((stat) => (
-                <article className="admin-stat" key={stat.label}>
-                  <p className="admin-stat__label">{stat.label}</p>
-                  <p className="admin-stat__value">{stat.value}</p>
-                  <p className="admin-stat__detail">{stat.detail}</p>
-                </article>
-              ))}
+              {stats.map((stat) => <article className="admin-stat" key={stat.label}><p className="admin-stat__label">{stat.label}</p><p className="admin-stat__value">{stat.value}</p><p className="admin-stat__detail">{stat.detail}</p></article>)}
             </div>
           </div>
-
           <aside className="admin-panel" aria-labelledby="quick-actions-title">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Controls</p>
-                <h2 id="quick-actions-title">Quick Actions</h2>
-              </div>
-            </div>
+            <div className="admin-panel__header"><h2 id="quick-actions-title">Quick Actions</h2></div>
             <div className="admin-actions">
-              <Link className="admin-action" to="/admin/queue">
-                Manage active queue
-                <span>Open</span>
-              </Link>
-              <Link className="admin-action" to="/admin/services">
-                Update services
-                <span>Edit</span>
-              </Link>
-              <Link className="admin-action" to="/admin/queue">
-                Review expired students
-                <span>Check</span>
-              </Link>
+              <Link className="admin-action" to="/admin/queue">Manage active queue<span>Open</span></Link>
+              <Link className="admin-action" to="/admin/services">Update services<span>Edit</span></Link>
+              <Link className="admin-action" to="/admin/reports">View history &amp; reports<span>Open</span></Link>
             </div>
           </aside>
         </section>
+        {loading && <p className="reports-feedback" role="status">Loading current operations…</p>}
+        {error && <p className="reports-feedback reports-feedback--error" role="alert">{error.message} {error.status === 401 && <Link to="/login">Sign in</Link>}</p>}
+        {report.data && <p className="reports-timing-note">Average wait uses {report.data.summary.measuredWaitVisits} of {report.data.summary.servedVisits} completed visits with valid start timestamps. <Link to="/admin/reports">View daily reports and visit details</Link>.</p>}
 
-        <section className="admin-reports" aria-labelledby="reports-title">
-          <div className="admin-panel admin-report-chart">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Reports</p>
-                <h2 id="reports-title">Today&apos;s Service Volume</h2>
-              </div>
-              <span className="admin-status">186 served</span>
-            </div>
+        {queues.data && <section className="admin-panel reports-section" aria-labelledby="service-lines-title">
+          <div className="admin-panel__header"><h2 id="service-lines-title">Current service lines</h2><Link to="/admin/queue">Manage queues</Link></div>
+          {queues.data.queues.length === 0 ? <p className="reports-empty">No services are available.</p> : <div className="reports-table-wrap"><table className="admin-table reports-table">
+            <caption>Current waiting and in-service visits</caption>
+            <thead><tr><th scope="col">Service</th><th scope="col">Waiting</th><th scope="col">In service</th></tr></thead>
+            <tbody>{queues.data.queues.map((queue) => <tr key={queue.service.id}><td>{queue.service.name}</td><td>{queue.waitingCount}</td><td>{queue.inService.length}</td></tr>)}</tbody>
+          </table></div>}
+        </section>}
 
-            <div className="admin-report-stats">
-              {reportStats.map((stat) => (
-                <article className="admin-report-stat" key={stat.label}>
-                  <p className="admin-report-stat__label">{stat.label}</p>
-                  <p className="admin-report-stat__value">{stat.value}</p>
-                  <p className="admin-report-stat__detail">{stat.detail}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className="admin-volume-chart" aria-label="Students served by hour">
-              {hourlyServiceVolume.map((hour) => (
-                <div className="admin-volume-row" key={hour.hour}>
-                  <span className="admin-volume-row__hour">{hour.hour}</span>
-                  <div className="admin-volume-row__track">
-                    <div
-                      className="admin-volume-row__bar"
-                      style={{ width: `${hour.percent}%` }}
-                    />
-                  </div>
-                  <span className="admin-volume-row__count">
-                    {hour.served}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <aside className="admin-panel" aria-labelledby="breakdown-title">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Breakdown</p>
-                <h2 id="breakdown-title">Served by Service</h2>
-              </div>
-            </div>
-
-            <div className="admin-breakdown-list">
-              {serviceReportBreakdown.map((item) => (
-                <article className="admin-breakdown-item" key={item.service}>
-                  <div>
-                    <p className="admin-breakdown-item__service">
-                      {item.service}
-                    </p>
-                    <p className="admin-breakdown-item__detail">
-                      {item.detail}
-                    </p>
-                  </div>
-                  <span>{item.served}</span>
-                </article>
-              ))}
-            </div>
-          </aside>
-        </section>
-
-        <section className="admin-grid">
-          <div className="admin-panel">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Services</p>
-                <h2>Service Demand</h2>
-              </div>
-            </div>
-
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Service</th>
-                  <th>Status</th>
-                  <th>Waiting</th>
-                  <th>Avg Wait</th>
-                  <th>Staff</th>
-                </tr>
-              </thead>
-              <tbody>
-                {serviceSummaries.map((service) => (
-                  <tr key={service.name}>
-                    <td>{service.name}</td>
-                    <td>
-                      <span className={getStatusClass(service.status)}>
-                        {service.status}
-                      </span>
-                    </td>
-                    <td>{service.waiting}</td>
-                    <td>{service.averageWait}</td>
-                    <td>{service.staff}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <aside className="admin-panel" aria-labelledby="activity-title">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Queue</p>
-                <h2 id="activity-title">Recent Activity</h2>
-              </div>
-            </div>
-
-            <div className="admin-activity">
-              {queueActivity.map((activity) => (
-                <article className="admin-activity__item" key={activity.name}>
-                  <div className="admin-activity__top">
-                    <span className="admin-activity__name">
-                      {activity.name}
-                    </span>
-                    <span className={getStatusClass(activity.status)}>
-                      {activity.status}
-                    </span>
-                  </div>
-                  <p className="admin-activity__service">{activity.service}</p>
-                  <p className="admin-activity__wait">
-                    Waited {activity.waited}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </aside>
-        </section>
+        {report.data && <section className="admin-panel reports-section" aria-labelledby="recent-visits-title">
+          <div className="admin-panel__header"><h2 id="recent-visits-title">Recent finished visits today</h2><Link to="/admin/reports">View all</Link></div>
+          {report.data.visits.length === 0 ? <p className="reports-empty">No visits have finished today.</p> : <div className="reports-table-wrap"><table className="admin-table reports-table">
+            <caption>Most recent visits, using Houston local time</caption>
+            <thead><tr><th scope="col">User ID</th><th scope="col">Service</th><th scope="col">Finished</th><th scope="col">Queue wait</th><th scope="col">Outcome</th></tr></thead>
+            <tbody>{report.data.visits.slice(0, 5).map((entry) => <tr key={entry.id}><td>{entry.userId}</td><td>{entry.serviceName}</td><td>{displayDate(entry.completedAt ?? entry.endedAt, report.data!.timeZone)}</td><td>{displayMinutes(entry.waitMinutes)}</td><td>{entry.status === 'served' ? 'Served' : 'Left queue'}</td></tr>)}</tbody>
+          </table></div>}
+        </section>}
       </main>
     </div>
   );

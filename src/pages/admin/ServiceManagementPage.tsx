@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import AdminHeader from './AdminHeader';
 
 import {
   employeeServiceNotes,
@@ -26,38 +26,7 @@ function getServiceBadgeClass(status: string) {
 function ServiceManagementPage() {
   return (
     <div className="admin-dashboard service-page">
-      <header className="admin-header">
-        <div className="admin-header__content">
-          <div className="admin-brand">
-            <img
-              className="admin-brand__logo"
-              src="/logos/uh-logo.png"
-              alt="University of Houston logo"
-            />
-            <div>
-              <p className="admin-brand__name">CougarQ Admin</p>
-              <p className="admin-brand__subtitle">
-                University of Houston Campus Store/Bookstore
-              </p>
-            </div>
-          </div>
-
-          <nav className="admin-nav" aria-label="Admin navigation">
-            <Link className="admin-nav__link" to="/admin">
-              Dashboard
-            </Link>
-            <Link
-              className="admin-nav__link admin-nav__link--active"
-              to="/admin/services"
-            >
-              Services
-            </Link>
-            <Link className="admin-nav__link" to="/admin/queue">
-              Queue
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <AdminHeader />
 
       <main className="admin-main service-main">
         <section className="service-summary" aria-labelledby="services-title">
