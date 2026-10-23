@@ -2,6 +2,187 @@
   max-width: 1280px;
 }
 
+.service-page {
+  min-height: 100vh;
+  background: #f6f7f9;
+  color: #1f2933;
+}
+
+.service-panel {
+  background: #ffffff;
+  border: 1px solid #d9dde3;
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.service-eyebrow {
+  margin: 0 0 6px;
+  color: #c8102e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.service-panel h1,
+.service-panel h2 {
+  margin-top: 0;
+}
+
+.service-description {
+  color: #5d6673;
+  line-height: 1.4;
+}
+
+.service-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.service-form label {
+  display: grid;
+  gap: 7px;
+  color: #1f2933;
+  font-weight: 700;
+}
+
+.service-form input,
+.service-form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2933;
+  font: inherit;
+}
+
+.service-form input:focus,
+.service-form textarea:focus {
+  outline: 2px solid #c8102e;
+  outline-offset: 1px;
+}
+
+.service-form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.service-form__actions {
+  display: flex;
+  gap: 12px;
+}
+
+.service-submit-button,
+.service-cancel-button,
+.service-edit-button {
+  border-radius: 6px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.service-submit-button {
+  border: 1px solid #c8102e;
+  background: #c8102e;
+  color: #ffffff;
+}
+
+.service-submit-button:hover {
+  background: #960c22;
+}
+
+.service-submit-button:disabled,
+.service-cancel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.service-cancel-button {
+  border: 1px solid #d9dde3;
+  background: #ffffff;
+  color: #1f2933;
+}
+
+.service-cancel-button:hover {
+  background: #f6f7f9;
+}
+
+.service-message {
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.service-message--success {
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.service-message--error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.service-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.service-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 18px;
+  border: 1px solid #d9dde3;
+  border-radius: 8px;
+}
+
+.service-card__content {
+  flex: 1;
+}
+
+.service-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.service-card h3 {
+  margin: 0;
+}
+
+.service-card p {
+  margin-bottom: 8px;
+  color: #5d6673;
+}
+
+.service-priority {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 4px;
+  background: #fff7ed;
+  color: #b45309;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.service-edit-button {
+  border: 1px solid #c8102e;
+  background: #ffffff;
+  color: #c8102e;
+}
+
+.service-edit-button:hover {
+  background: #c8102e;
+  color: #ffffff;
+}
+
 .service-summary {
   margin-bottom: 18px;
 }
@@ -307,4 +488,21 @@
   .service-rule span {
     white-space: normal;
   }
+
+  .service-card {
+  flex-direction: column;
+}
+
+.service-edit-button {
+  width: 100%;
+}
+
+.service-form__actions {
+  flex-direction: column;
+}
+
+.service-submit-button,
+.service-cancel-button {
+  width: 100%;
+}
 }
