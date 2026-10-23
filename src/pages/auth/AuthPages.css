@@ -240,3 +240,8 @@
     padding: 24px 14px;
   }
 }
+
+.auth-submit:disabled {
+  background: #d9a3ad;
+  cursor: not-allowed;
+}

@@ -1,3 +1,5 @@
+import { authHeaders } from './session';
+
 export class ApiRequestError extends Error {
   readonly status: number;
 
@@ -12,6 +14,7 @@ export async function requestApi<T>(path: string, options: RequestInit = {}): Pr
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
   if (options.body) headers.set('Content-Type', 'application/json');
+  for (const [name, value] of Object.entries(authHeaders())) headers.set(name, value);
 
   const response = await fetch(path, { ...options, headers, credentials: 'include' });
   let body: unknown;
