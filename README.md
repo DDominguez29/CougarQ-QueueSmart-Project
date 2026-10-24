@@ -33,23 +33,40 @@ Agile also fits our team workflow because different parts of the system can be d
 
 ## Current Project Features
 
-- Login and registration pages
+- Login, registration, and sign-out buttons
 - User dashboard for viewing queue information
 - Join Queue page for selecting a bookstore service
 - Queue Status page with position, wait time, and status information
 - User history page for completed and abandoned queue visits
+- User notifications for joining a queue and approaching the front of a service line
 - Admin dashboard with service and queue metrics
 - Service management tools for bookstore staff
 - Queue management tools for viewing waiting students, starting the next visit, and completing service
 - Admin reports with completed visits, unique people served, and average queue wait time, using Houston local dates
 
-Queue management, history, and reporting are connected to the shared backend in `server/`. Authentication and the remaining modules still need team integration. The current test login does not authenticate backend requests, so protected pages show a sign-in message until authentication is connected. Backend data is currently stored in memory and resets when the server restarts.
+Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Backend data is currently stored in memory and resets when the server restarts.
 
 ## Why These Technologies Fit the Project
 
 TypeScript, React, and CSS keep the interface organized and easy to maintain. Node.js and Express provide the API that applies queue rules, records visit outcomes, and calculates bookstore reports. Using TypeScript across both sides helps the team keep data structures consistent as features are developed and integrated.
 
 ## Getting Started
+
+The project keeps frontend pages and backend modules together by purpose:
+
+```text
+src/
+  api/                Frontend requests and login session handling
+  components/         Components shared by user and admin pages
+  hooks/              Shared data-loading hooks
+  pages/
+    auth/             Login and registration
+    user/             Dashboard, join/leave, history, and notifications
+    admin/            Services, queues, and reports
+server/
+  src/modules/        Backend feature modules, including notifications
+  tests/              Backend tests
+```
 
 Use Node.js 22.18 or later. Run the following commands from the repository root.
 

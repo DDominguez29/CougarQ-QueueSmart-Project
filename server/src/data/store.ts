@@ -1,4 +1,5 @@
 import type { Session, User } from '../modules/auth/auth.models.ts';
+import { createNotificationStore } from '../modules/notifications/notifications.service.ts';
 import type { QueueEntry, Service } from '../shared/models.ts';
 
 export function createStore() {
@@ -8,6 +9,7 @@ export function createStore() {
     queueEntries: new Map<string, QueueEntry>(),
     users: new Map<string, User>(),
     sessions: new Map<string, Session>(),
+    notifications: createNotificationStore(),
   };
 }
 

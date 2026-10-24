@@ -40,6 +40,11 @@ export interface QueueOverview {
   totalWaiting: number;
 }
 
+export interface UserQueue {
+  entry: QueueEntry | null;
+  position: number | null;
+}
+
 export interface ServeNextResult {
   started: QueueEntry;
   queue: QueueView;

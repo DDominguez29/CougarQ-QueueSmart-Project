@@ -23,6 +23,13 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
+  if (error instanceof URIError) {
+    response.status(400).json({
+      error: { code: 'INVALID_INPUT', message: 'URL parameters must use valid encoding.' },
+    });
+    return;
+  }
+
   if (error instanceof Error && 'type' in error) {
     if (error.type === 'entity.parse.failed') {
       response.status(400).json({

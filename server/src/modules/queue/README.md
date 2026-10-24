@@ -23,12 +23,20 @@ Completion accepts no body (or an empty JSON object). It requires an in-service 
 
 Responses follow `{ data: ... }` or `{ error: { code, message } }`. Invalid input is `400`, unauthenticated requests `401`, non-admin requests `403`, missing resources `404`, and queue conflicts `409`. IDs must be 1-100 ASCII letters, digits, hyphens, or underscores, starting with a letter or digit.
 
-## Join/leave integration (separate team responsibility)
+## User join/leave endpoints
 
-Suggested paths remain `POST /api/services/:serviceId/queue` and `DELETE /api/queue/:entryId`. These are not implemented here. Keep their HTTP handlers in a separate `queue.user.routes.ts` so two people can work independently; both sides must use the same store and ordering rules.
+`queue.user.routes.ts` and `queue.user.service.ts` implement the user flow with the same shared store as administrator queue management.
 
-On join: create a unique `QueueEntry` with the verified user ID, service ID, backend-controlled numeric priority, UTC ISO `joinedAt`, `status: 'queued'`, `endedAt: null`, and preferably a `serviceName` snapshot. `serviceStartedAt` and `completedAt` can initially be null or omitted. On leave: verify ownership and queued status, update to `left`, set `endedAt`, and retain the entry. Do not let user leave operations overwrite an in-service or completed visit. Rejoining must create a new participation ID. Never accept client-supplied priority/role as authority.
+| Method | Path | Response data |
+| --- | --- | --- |
+| GET | `/api/queue/me` | `{ entry, position }`; both null when there is no active visit |
+| POST | `/api/services/:serviceId/queue` | New entry (`201`) |
+| DELETE | `/api/queue/:entryId` | Retained entry with `status: 'left'` |
 
-Register the join/leave router in `app.ts`. The admin router's permission checks apply only to its own routes, allowing user routes to share the service path. Use the auth resolver described in `server/README.md`.
+All require a verified identity. Join/leave accept no body or an empty object; user IDs, priorities, and timestamps cannot be supplied by the client. Joining creates a unique participation ID, takes priority from the selected service, and snapshots its name. One active visit per user is allowed across waiting and in-service states; repeat/concurrent joins return `409 ALREADY_IN_QUEUE`.
 
-Tests: `server/tests/queue.test.ts` and `server/tests/routes.test.ts`.
+Leaving requires ownership and `queued` status, records `endedAt`, and retains the entry for history. Another user's visit returns `404`; an in-service or finished visit returns `409 NOT_WAITING`. Rejoining creates a new visit. Current position follows the same service-specific ordering as the administrator queue; an in-service visit has no waiting position.
+
+Join, leave, and start-next generate the notification events documented in `../notifications/README.md`. The user dashboard, join page, and queue-status page now read backend data; they no longer create browser-only notifications or simulated status changes.
+
+Tests: `server/tests/queue.test.ts`, `server/tests/queue.user.test.ts`, `server/tests/routes.test.ts`, and `server/tests/notifications.test.ts`.

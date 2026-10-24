@@ -17,6 +17,7 @@ export async function requestApi<T>(path: string, options: RequestInit = {}): Pr
   for (const [name, value] of Object.entries(authHeaders())) headers.set(name, value);
 
   const response = await fetch(path, { ...options, headers, credentials: 'include' });
+  if (response.status === 204) return undefined as T;
   let body: unknown;
   try {
     body = await response.json();

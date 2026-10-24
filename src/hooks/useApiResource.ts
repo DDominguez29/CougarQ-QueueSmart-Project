@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { requestApi, requestError, type ApiRequestError } from '../api/client';
 
-export function useApiResource<T>(path: string) {
+export function useApiResource<T>(path: string, pollInterval = 0) {
   const [state, setState] = useState<{ key: string; data: T | null; error: ApiRequestError | null }>({
     key: '', data: null, error: null,
   });
@@ -20,6 +20,12 @@ export function useApiResource<T>(path: string) {
     );
     return () => controller.abort();
   }, [path, key]);
+
+  useEffect(() => {
+    if (pollInterval <= 0) return;
+    const timer = setInterval(() => setRevision((current) => current + 1), pollInterval);
+    return () => clearInterval(timer);
+  }, [path, pollInterval]);
 
   const refresh = useCallback(() => {
     setRevision((current) => current + 1);

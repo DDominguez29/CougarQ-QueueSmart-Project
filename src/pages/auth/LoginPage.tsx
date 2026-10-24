@@ -8,7 +8,7 @@ import {
   validateLoginEmail,
   validateLoginPassword,
 } from './authValidation';
-import { loginRequest } from './authApi';
+import { loginRequest } from '../../api/auth';
 
 type LoginField = 'email' | 'password';
 type LoginErrors = Partial<Record<LoginField, string>>;

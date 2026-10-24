@@ -1,50 +1,19 @@
+import UserHeader from './UserHeader';
 import { Link } from 'react-router-dom';
 
-import {
-  availableServices,
-  userQueue,
-} from '../../design/queueSmartDesign';
+import type { Service, UserQueue } from '../../../server/src/shared/models';
+import { displayMinutes } from '../../api/display';
+import { useApiResource } from '../../hooks/useApiResource';
 
 import './UserDashboardPage.css';
 
 function UserDashboardPage() {
+  const current = useApiResource<UserQueue>('/api/queue/me', 5000);
+  const services = useApiResource<Service[]>('/api/services', 5000);
+  const entry = current.error ? null : current.data?.entry;
   return (
     <div className="user-dashboard">
-      <header className="user-header">
-        <div className="user-header__content">
-          <div className="user-brand">
-            <img
-              className="user-brand__logo"
-              src="/logos/uh-logo.png"
-              alt="University of Houston logo"
-            />
-
-            <div>
-              <p className="user-brand__name">CougarQ</p>
-              <p className="user-brand__subtitle">
-                University of Houston Campus Store/Bookstore
-              </p>
-            </div>
-          </div>
-
-          <nav className="user-nav" aria-label="User navigation">
-            <Link className="user-nav__link" to="/dashboard">
-              Dashboard
-            </Link>
-
-            <Link className="user-nav__link" to="/join-queue">
-              Join Queue
-            </Link>
-
-            <Link className="user-nav__link" to="/queue-status">
-              Queue Status
-            </Link>
-            <Link className="user-nav__link" to="/history">
-              History
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <UserHeader />
 
       <main className="user-main">
         <section className="user-panel">
@@ -53,42 +22,45 @@ function UserDashboardPage() {
               <p className="user-panel__eyebrow">Today</p>
               <h1>User Dashboard</h1>
               <p className="user-panel__note">
-                View your current queue position and available services.
+                View your current service queue and available services.
               </p>
             </div>
 
             <span className="user-status">Live queue</span>
           </div>
 
-          <div className="user-current-queue">
+          {current.loading && !current.data && <p role="status">Loading your queue…</p>}
+          {current.error && <p role="alert">{current.error.message} {current.error.status === 401 && <Link to="/login">Sign in</Link>}</p>}
+          {current.data && !current.error && !entry && <p>No active visit. <Link to="/join-queue">Find a queue</Link> or <Link to="/history">review your history</Link>.</p>}
+          {entry && <div className="user-current-queue">
             <div>
               <p className="user-current-queue__label">Current Queue</p>
-              <h2>{userQueue.service}</h2>
+              <h2>{entry.serviceName ?? 'Bookstore service'}</h2>
             </div>
 
             <div className="user-queue-stats">
               <div className="user-stat">
                 <p className="user-stat__label">Position</p>
-                <p className="user-stat__value">#{userQueue.position}</p>
+                <p className="user-stat__value">{current.data?.position == null ? '—' : `#${current.data.position}`}</p>
               </div>
 
               <div className="user-stat">
-                <p className="user-stat__label">Estimated Wait</p>
+                <p className="user-stat__label">Your Visit</p>
                 <p className="user-stat__value">
-                  {userQueue.estimatedWait}
+                  <Link to="/queue-status">View queue</Link>
                 </p>
               </div>
 
               <div className="user-stat">
                 <p className="user-stat__label">Status</p>
-                <p className="user-stat__value">{userQueue.status}</p>
+                <p className="user-stat__value">{entry.status === 'serving' ? 'Being served' : 'Waiting'}</p>
               </div>
             </div>
 
             <Link className="user-primary-button" to="/queue-status">
               View Queue Status
             </Link>
-          </div>
+          </div>}
         </section>
 
         <section className="user-panel">
@@ -100,19 +72,18 @@ function UserDashboardPage() {
           </div>
 
           <div className="user-services">
-            {availableServices.map((service) => (
-              <article className="user-service-card" key={service.name}>
+            {services.error && <p role="alert">{services.error.message}</p>}
+            {services.loading && !services.data && <p role="status">Loading services…</p>}
+            {services.data?.length === 0 && <p>No services are available yet.</p>}
+            {services.data?.map((service) => (
+              <article className="user-service-card" key={service.id}>
                 <div>
                   <h3>{service.name}</h3>
-                  <p>{service.waiting} students waiting</p>
-                  <p>Estimated wait: {service.estimatedWait}</p>
+                  <p>{service.description}</p>
+                  <p>Expected service time: {displayMinutes(service.expectedDurationMinutes)}</p>
                 </div>
 
                 <div className="user-service-card__footer">
-                  <span className="user-service-status">
-                    {service.status}
-                  </span>
-
                   <Link
                     className="user-secondary-button"
                     to="/join-queue"
