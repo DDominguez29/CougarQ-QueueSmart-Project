@@ -76,9 +76,9 @@ function ReportsPage() {
                 <>
                   <div className="reports-table-wrap"><table className="admin-table reports-table reports-visits-table">
                     <caption>Most recent first. All timestamps use {STORE_TIME_LABEL}.</caption>
-                    <thead><tr><th scope="col">User ID</th><th scope="col">Service</th><th scope="col">Joined</th><th scope="col">Service started</th><th scope="col">Finished</th><th scope="col">Queue wait</th><th scope="col">Outcome</th></tr></thead>
+                    <thead><tr><th scope="col">Student</th><th scope="col">Service</th><th scope="col">Joined</th><th scope="col">Service started</th><th scope="col">Finished</th><th scope="col">Queue wait</th><th scope="col">Outcome</th></tr></thead>
                     <tbody>{data.visits.map((entry) => <tr key={entry.id}>
-                      <td>{entry.userId}</td><td>{entry.serviceName}</td>
+                      <td>{entry.userName ?? entry.userId}</td><td>{entry.serviceName}</td>
                       <td>{displayDate(entry.joinedAt, data.timeZone)}</td><td>{displayDate(entry.serviceStartedAt ?? null, data.timeZone)}</td>
                       <td>{displayDate(entry.completedAt ?? entry.endedAt, data.timeZone)}</td><td>{displayMinutes(entry.waitMinutes)}</td>
                       <td><span className={`admin-badge${entry.status === 'served' ? ' admin-badge--success' : ''}`}>{entry.status === 'served' ? 'Served' : 'Left queue'}</span></td>

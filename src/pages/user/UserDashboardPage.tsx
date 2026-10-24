@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import type { Service, UserQueue } from '../../../server/src/shared/models';
 import { displayMinutes } from '../../api/display';
+import { formatWait, type ServiceWaitEstimate } from '../../api/waitTime';
+import WaitEstimate from '../../components/WaitEstimate';
 import { useApiResource } from '../../hooks/useApiResource';
 
 import './UserDashboardPage.css';
@@ -10,7 +12,13 @@ import './UserDashboardPage.css';
 function UserDashboardPage() {
   const current = useApiResource<UserQueue>('/api/queue/me', 5000);
   const services = useApiResource<Service[]>('/api/services', 5000);
+  const waits = useApiResource<{ estimates: ServiceWaitEstimate[] }>('/api/wait-time/services', 5000);
   const entry = current.error ? null : current.data?.entry;
+
+  function waitFor(serviceId: string) {
+    const wait = waits.data?.estimates.find((item) => item.serviceId === serviceId);
+    return wait ? formatWait(wait.estimatedWaitMinutes) : '—';
+  }
   return (
     <div className="user-dashboard">
       <UserHeader />
@@ -45,15 +53,15 @@ function UserDashboardPage() {
               </div>
 
               <div className="user-stat">
-                <p className="user-stat__label">Your Visit</p>
+                <p className="user-stat__label">Estimated Wait</p>
                 <p className="user-stat__value">
-                  <Link to="/queue-status">View queue</Link>
+                  <WaitEstimate entryId={entry.id} show="wait" />
                 </p>
               </div>
 
               <div className="user-stat">
                 <p className="user-stat__label">Status</p>
-                <p className="user-stat__value">{entry.status === 'serving' ? 'Being served' : 'Waiting'}</p>
+                <p className="user-stat__value"><WaitEstimate entryId={entry.id} show="stage" /></p>
               </div>
             </div>
 
@@ -81,6 +89,7 @@ function UserDashboardPage() {
                   <h3>{service.name}</h3>
                   <p>{service.description}</p>
                   <p>Expected service time: {displayMinutes(service.expectedDurationMinutes)}</p>
+                  <p>Estimated wait: {waitFor(service.id)}</p>
                 </div>
 
                 <div className="user-service-card__footer">

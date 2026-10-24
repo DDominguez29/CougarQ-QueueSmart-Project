@@ -5,12 +5,14 @@ import type { Service, UserQueue } from '../../../server/src/shared/models';
 import { requestError, type ApiRequestError } from '../../api/client';
 import { displayMinutes } from '../../api/display';
 import { joinServiceQueue } from '../../api/queue';
+import { formatWait, type ServiceWaitEstimate } from '../../api/waitTime';
 import { useApiResource } from '../../hooks/useApiResource';
 import './JoinQueuePage.css';
 
 function JoinQueuePage() {
   const services = useApiResource<Service[]>('/api/services', 5000);
   const current = useApiResource<UserQueue>('/api/queue/me', 5000);
+  const waits = useApiResource<{ estimates: ServiceWaitEstimate[] }>('/api/wait-time/services', 5000);
   const [joining, setJoining] = useState<string | null>(null);
   const pending = useRef(false);
   const [actionError, setActionError] = useState<ApiRequestError | null>(null);
@@ -45,11 +47,14 @@ function JoinQueuePage() {
         {services.loading && !services.data && <p role="status">Loading services…</p>}
         {services.data?.length === 0 && <p>No services are available yet.</p>}
         <div className="join-service-list">
-          {services.data?.map((service) => (
+          {services.data?.map((service) => {
+            const wait = waits.data?.estimates.find((item) => item.serviceId === service.id);
+            return (
             <article className="join-service-card" key={service.id}>
               <div>
                 <h3>{service.name}</h3><p>{service.description}</p>
                 <p>Expected service time: {displayMinutes(service.expectedDurationMinutes)}</p>
+                <p>{wait ? `${wait.peopleAhead} waiting · Estimated wait: ${formatWait(wait.estimatedWaitMinutes)}` : 'Estimated wait: —'}</p>
               </div>
               <div className="join-service-card__right">
                 <button className="join-queue-button" type="button"
@@ -59,7 +64,8 @@ function JoinQueuePage() {
                 </button>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </section></main>
     </div>

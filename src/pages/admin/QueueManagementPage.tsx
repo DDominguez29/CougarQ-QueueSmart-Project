@@ -31,8 +31,8 @@ function QueueManagementPage() {
         return { queues, totalWaiting: queues.reduce((count, item) => count + item.waitingCount, 0) };
       });
       setNotice('started' in result
-        ? `Service started for user ${result.started.userId}. Complete the visit when finished.`
-        : `Visit completed for user ${result.completed.userId}. It is now included in reports and history.`);
+        ? `Service started for ${result.started.userName ?? result.started.userId}. Complete the visit when finished.`
+        : `Visit completed for ${result.completed.userName ?? result.completed.userId}. It is now included in reports and history.`);
     } catch (failure) {
       const issue = requestError(failure);
       setActionError(issue.message);
@@ -123,11 +123,11 @@ function QueueManagementPage() {
                     <h3>In service ({queue.inService.length})</h3>
                     <div className="queue-table-wrap"><table className="admin-table">
                       <caption className="queue-table-caption">Visits currently receiving service for {queue.service.name}</caption>
-                      <thead><tr><th scope="col">User ID</th><th scope="col">Service started</th><th scope="col">Action</th></tr></thead>
+                      <thead><tr><th scope="col">Student</th><th scope="col">Service started</th><th scope="col">Action</th></tr></thead>
                       <tbody>{queue.inService.map((entry) => <tr key={entry.id}>
-                        <td>{entry.userId}</td><td>{displayDate(entry.serviceStartedAt ?? null)}</td>
+                        <td>{entry.userName ?? entry.userId}</td><td>{displayDate(entry.serviceStartedAt ?? null)}</td>
                         <td><button type="button" className="queue-action queue-action--ready" disabled={loading || servingService !== null}
-                          aria-label={`Complete service for ${entry.userId}`} onClick={() => void handleServe(queue, entry.id)}>
+                          aria-label={`Complete service for ${entry.userName ?? entry.userId}`} onClick={() => void handleServe(queue, entry.id)}>
                           {servingService === `complete:${entry.id}` ? 'Completing…' : 'Complete service'}
                         </button></td>
                       </tr>)}</tbody>
@@ -138,12 +138,12 @@ function QueueManagementPage() {
                   <div className="queue-table-wrap">
                     <table className="admin-table queue-table queue-table--current">
                       <caption className="queue-table-caption">Waiting users for {queue.service.name}</caption>
-                      <thead><tr><th scope="col">Position</th><th scope="col">User ID</th><th scope="col">Priority</th><th scope="col">Joined</th><th scope="col">Time waiting</th><th scope="col">Status</th></tr></thead>
+                      <thead><tr><th scope="col">Position</th><th scope="col">Student</th><th scope="col">Priority</th><th scope="col">Joined</th><th scope="col">Time waiting</th><th scope="col">Status</th></tr></thead>
                       <tbody>
                         {queue.entries.map((entry) => (
                           <tr key={entry.id}>
                             <td className="queue-position">#{entry.position}</td>
-                            <td><span className="queue-student__name">{entry.userId}</span></td>
+                            <td><span className="queue-student__name">{entry.userName ?? entry.userId}</span></td>
                             <td><span className="queue-priority">{entry.priority}</span></td>
                             <td><time dateTime={entry.joinedAt}>{displayDate(entry.joinedAt)}</time></td>
                             <td className="queue-wait">{elapsedMinutes(entry.joinedAt)} min</td>
