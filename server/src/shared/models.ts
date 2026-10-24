@@ -18,6 +18,7 @@ export interface QueueEntry {
   status: QueueStatus;
   endedAt: string | null;
   serviceName?: string;
+  userName?: string;
   serviceStartedAt?: string | null;
   completedAt?: string | null;
 }

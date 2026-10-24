@@ -4,7 +4,7 @@ Owner: Denzel.
 
 ## Formula
 
-There is one general line shared by all services. Each service has an expected time per person, and the estimate is the sum of those times for everyone ahead. It means time until the person **starts** being served.
+Each service has its own line and an expected time per person. The estimate is that time multiplied by the number of people ahead in the same line. It means time until the person **starts** being served.
 
 | Service | Minutes per person |
 | --- | --- |
@@ -12,9 +12,9 @@ There is one general line shared by all services. Each service has an expected t
 | CTAP Express (1 book or material) | 2 |
 | Support Table Help Desk | 4 |
 
-Example: ahead of you are Main, Express, and Help Desk, so your wait is 5 + 2 + 4 = 11 minutes.
+Example: 3 people are ahead of you in CTAP Main Lane, so your wait is 3 × 5 = 15 minutes.
 
-Line order is higher priority first, then earlier `joinedAt`. An entry is `almost-ready` when 2 or fewer people are ahead. The minutes come from each service's `expectedDurationMinutes`, so admins can change them in Service Management. Demo services are seeded in `data/seed.ts`.
+Line order is higher priority first, then earlier `joinedAt`. An entry is `almost-ready` when 2 or fewer people are ahead. The minutes come from each service's `expectedDurationMinutes`, so admins can change them in Service Management. Demo services and a sample queue of students are seeded in `data/seed.ts`.
 
 ## Endpoints (sign in required)
 
@@ -28,7 +28,7 @@ Line order is higher priority first, then earlier `joinedAt`. An entry is `almos
 
 Import from `wait-time.service.ts` instead of calling the endpoints:
 
-- `getWaitingLine(store)` and `compareQueueEntries` for the shared line order
+- `getWaitingLine(store, serviceId)` and `compareQueueEntries` for the shared line order
 - `estimateForEntry(store, entryId)` for position and stage (useful for near-turn notifications)
 
 Tests: `server/tests/wait-time.test.ts`.

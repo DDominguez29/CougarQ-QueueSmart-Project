@@ -23,10 +23,9 @@ export function compareQueueEntries(a: QueueEntry, b: QueueEntry) {
   return Date.parse(a.joinedAt) - Date.parse(b.joinedAt);
 }
 
-// One general line shared by every service.
-export function getWaitingLine(store: Store) {
+export function getWaitingLine(store: Store, serviceId: string) {
   return [...store.queueEntries.values()]
-    .filter((entry) => entry.status === 'queued')
+    .filter((entry) => entry.serviceId === serviceId && entry.status === 'queued')
     .sort(compareQueueEntries);
 }
 
@@ -36,17 +35,13 @@ function getService(store: Store, serviceId: string) {
   return service;
 }
 
-function durationsFor(store: Store, entries: QueueEntry[]) {
-  return entries.map((entry) => getService(store, entry.serviceId).expectedDurationMinutes);
-}
-
 export function estimateForNewEntry(store: Store, serviceId: string) {
   const service = getService(store, serviceId);
-  const line = getWaitingLine(store);
+  const line = getWaitingLine(store, serviceId);
   return {
     serviceId,
     peopleAhead: line.length,
-    estimatedWaitMinutes: estimateWaitMinutes(durationsFor(store, line)),
+    estimatedWaitMinutes: estimateWaitMinutes(line.map(() => service.expectedDurationMinutes)),
     serviceMinutes: service.expectedDurationMinutes,
   };
 }
@@ -66,7 +61,8 @@ export function estimateForEntry(store: Store, entryId: string) {
     };
   }
 
-  const line = getWaitingLine(store);
+  const service = getService(store, entry.serviceId);
+  const line = getWaitingLine(store, entry.serviceId);
   const ahead = line.slice(0, line.findIndex((item) => item.id === entry.id));
   const stage: WaitStage = ahead.length <= ALMOST_READY_AHEAD ? 'almost-ready' : 'waiting';
 
@@ -76,6 +72,6 @@ export function estimateForEntry(store: Store, entryId: string) {
     stage,
     position: ahead.length + 1,
     peopleAhead: ahead.length,
-    estimatedWaitMinutes: estimateWaitMinutes(durationsFor(store, ahead)),
+    estimatedWaitMinutes: estimateWaitMinutes(ahead.map(() => service.expectedDurationMinutes)),
   };
 }

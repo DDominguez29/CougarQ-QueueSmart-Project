@@ -89,28 +89,33 @@ describe('queue ordering', () => {
     assert.deepEqual(sorted.map((entry) => entry.id), [urgent.id, early.id, late.id]);
   });
 
-  test('uses one line for every service and skips finished entries', () => {
+  test('keeps a separate line per service and skips finished entries', () => {
     const store = seededStore();
     const main = addEntry(store, { serviceId: 'ctap-main', minute: 1 });
-    const express = addEntry(store, { serviceId: 'ctap-express', minute: 2 });
+    addEntry(store, { serviceId: 'ctap-express', minute: 2 });
     addEntry(store, { status: 'served', minute: 3 });
     addEntry(store, { status: 'left', minute: 4 });
-    const help = addEntry(store, { serviceId: 'help-desk', minute: 5 });
-    assert.deepEqual(getWaitingLine(store).map((entry) => entry.id), [main.id, express.id, help.id]);
+    const laterMain = addEntry(store, { serviceId: 'ctap-main', minute: 5 });
+    assert.deepEqual(getWaitingLine(store, 'ctap-main').map((entry) => entry.id), [main.id, laterMain.id]);
   });
 });
 
 describe('wait-time estimates', () => {
-  test('a new person waits for everyone in line, whatever service they picked', () => {
+  test('a new person only waits for people in the same service', () => {
     const store = seededStore();
     addEntry(store, { serviceId: 'ctap-main' });
     addEntry(store, { serviceId: 'ctap-express' });
+    addEntry(store, { serviceId: 'ctap-express' });
     addEntry(store, { serviceId: 'help-desk' });
 
-    const estimate = estimateForNewEntry(store, 'ctap-express');
-    assert.equal(estimate.peopleAhead, 3);
-    assert.equal(estimate.estimatedWaitMinutes, 11);
-    assert.equal(estimate.serviceMinutes, 2);
+    const express = estimateForNewEntry(store, 'ctap-express');
+    assert.equal(express.peopleAhead, 2);
+    assert.equal(express.estimatedWaitMinutes, 4);
+    assert.equal(express.serviceMinutes, 2);
+
+    const main = estimateForNewEntry(store, 'ctap-main');
+    assert.equal(main.peopleAhead, 1);
+    assert.equal(main.estimatedWaitMinutes, 5);
   });
 
   test('throws for an unknown service', () => {
@@ -119,9 +124,10 @@ describe('wait-time estimates', () => {
 
   test('gives position, wait, and stage for a waiting entry', () => {
     const store = seededStore();
+    addEntry(store, { serviceId: 'help-desk' });
+    addEntry(store, { serviceId: 'help-desk' });
     addEntry(store, { serviceId: 'ctap-main' });
-    addEntry(store, { serviceId: 'ctap-main' });
-    addEntry(store, { serviceId: 'ctap-express' });
+    addEntry(store, { serviceId: 'help-desk' });
     const mine = addEntry(store, { serviceId: 'help-desk' });
 
     const estimate = estimateForEntry(store, mine.id);
@@ -129,6 +135,14 @@ describe('wait-time estimates', () => {
     assert.equal(estimate.peopleAhead, 3);
     assert.equal(estimate.estimatedWaitMinutes, 12);
     assert.equal(estimate.stage, 'waiting');
+  });
+
+  test('reports a serving entry as being served with no wait', () => {
+    const store = seededStore();
+    const serving = addEntry(store, { status: 'serving' });
+    const estimate = estimateForEntry(store, serving.id);
+    assert.equal(estimate.stage, 'serving');
+    assert.equal(estimate.estimatedWaitMinutes, 0);
   });
 
   test('marks someone almost ready when two or fewer are ahead', () => {
@@ -191,10 +205,13 @@ describe('wait-time endpoints', () => {
     const response = await request(baseUrl, '/api/wait-time/services', { token: studentToken });
     assert.equal(response.status, 200);
     assert.equal(response.body.data.estimates.length, 3);
-    for (const estimate of response.body.data.estimates) {
-      assert.equal(estimate.peopleAhead, 2);
-      assert.equal(estimate.estimatedWaitMinutes, 7);
-    }
+    const byService = Object.fromEntries(
+      response.body.data.estimates.map((estimate: { serviceId: string; estimatedWaitMinutes: number }) => [
+        estimate.serviceId,
+        estimate.estimatedWaitMinutes,
+      ]),
+    );
+    assert.deepEqual(byService, { 'ctap-main': 5, 'ctap-express': 2, 'help-desk': 0 });
   });
 
   test('estimates one service and returns 404 for unknown ones', async () => {
@@ -209,8 +226,8 @@ describe('wait-time endpoints', () => {
   test('lets owners and admins see an entry estimate, but not other students', async () => {
     const own = await request(baseUrl, `/api/wait-time/entries/${studentEntryId}`, { token: studentToken });
     assert.equal(own.status, 200);
-    assert.equal(own.body.data.position, 2);
-    assert.equal(own.body.data.estimatedWaitMinutes, 5);
+    assert.equal(own.body.data.position, 1);
+    assert.equal(own.body.data.estimatedWaitMinutes, 0);
 
     const admin = await request(baseUrl, `/api/wait-time/entries/${otherEntryId}`, { token: adminToken });
     assert.equal(admin.status, 200);

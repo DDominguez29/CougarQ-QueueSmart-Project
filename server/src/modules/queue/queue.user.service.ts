@@ -27,7 +27,8 @@ export function joinQueue(store: Store, identity: Identity | undefined, serviceI
   }
   // No await between checking and inserting: repeat requests cannot create two visits.
   const entry: QueueEntry = {
-    id: randomUUID(), userId: actor.userId, serviceId: service.id, serviceName: service.name,
+    id: randomUUID(), userId: actor.userId, userName: store.users.get(actor.userId)?.fullName,
+    serviceId: service.id, serviceName: service.name,
     priority: service.priority, joinedAt: new Date().toISOString(), status: 'queued',
     endedAt: null, serviceStartedAt: null, completedAt: null,
   };

@@ -5,6 +5,7 @@ import type { UserQueue } from '../../../server/src/shared/models';
 import { requestError, type ApiRequestError } from '../../api/client';
 import { displayDate } from '../../api/display';
 import { leaveServiceQueue } from '../../api/queue';
+import WaitEstimate from '../../components/WaitEstimate';
 import { useApiResource } from '../../hooks/useApiResource';
 import './QueueStatusPage.css';
 
@@ -46,7 +47,8 @@ function QueueStatusPage() {
           <h2>{entry.serviceName ?? 'Bookstore service'}</h2>
           <div className="queue-position"><p>Your service queue position</p><span>{data?.position == null ? '—' : `#${data.position}`}</span></div>
           <div className="queue-status-info">
-            <div><p>Status</p><strong>{entry.status === 'serving' ? 'Being served' : 'Waiting'}</strong></div>
+            <div><p>Estimated wait</p><strong><WaitEstimate entryId={entry.id} show="wait" /></strong></div>
+            <div><p>Status</p><strong><WaitEstimate entryId={entry.id} show="stage" /></strong></div>
             <div><p>Joined (Houston time)</p><strong>{displayDate(entry.joinedAt)}</strong></div>
           </div>
           <p className="queue-status-message">Updates appear automatically. <Link to="/notifications">View your notifications</Link>.</p>

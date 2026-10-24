@@ -62,8 +62,8 @@ function AdminDashboardPage() {
           <div className="admin-panel__header"><h2 id="recent-visits-title">Recent finished visits today</h2><Link to="/admin/reports">View all</Link></div>
           {report.data.visits.length === 0 ? <p className="reports-empty">No visits have finished today.</p> : <div className="reports-table-wrap"><table className="admin-table reports-table">
             <caption>Most recent visits, using Houston local time</caption>
-            <thead><tr><th scope="col">User ID</th><th scope="col">Service</th><th scope="col">Finished</th><th scope="col">Queue wait</th><th scope="col">Outcome</th></tr></thead>
-            <tbody>{report.data.visits.slice(0, 5).map((entry) => <tr key={entry.id}><td>{entry.userId}</td><td>{entry.serviceName}</td><td>{displayDate(entry.completedAt ?? entry.endedAt, report.data!.timeZone)}</td><td>{displayMinutes(entry.waitMinutes)}</td><td>{entry.status === 'served' ? 'Served' : 'Left queue'}</td></tr>)}</tbody>
+            <thead><tr><th scope="col">Student</th><th scope="col">Service</th><th scope="col">Finished</th><th scope="col">Queue wait</th><th scope="col">Outcome</th></tr></thead>
+            <tbody>{report.data.visits.slice(0, 5).map((entry) => <tr key={entry.id}><td>{entry.userName ?? entry.userId}</td><td>{entry.serviceName}</td><td>{displayDate(entry.completedAt ?? entry.endedAt, report.data!.timeZone)}</td><td>{displayMinutes(entry.waitMinutes)}</td><td>{entry.status === 'served' ? 'Served' : 'Left queue'}</td></tr>)}</tbody>
           </table></div>}
         </section>}
       </main>
