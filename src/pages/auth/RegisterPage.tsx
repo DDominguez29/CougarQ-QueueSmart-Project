@@ -11,7 +11,7 @@ import {
   validateNewPassword,
   validateRegisterEmail,
 } from './authValidation';
-import { registerRequest } from './authApi';
+import { registerRequest } from '../../api/auth';
 
 type RegisterField = 'fullName' | 'email' | 'password' | 'confirmPassword';
 type RegisterErrors = Partial<Record<RegisterField, string>>;

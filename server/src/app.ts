@@ -10,6 +10,8 @@ import { createHistoryRouter } from './modules/history/history.routes.ts';
 import { createAdminQueueRouter } from './modules/queue/queue.routes.ts';
 import { createReportsRouter } from './modules/reports/reports.routes.ts';
 import { createServicesRouter } from './modules/services/services.routes.ts';
+import { createNotificationsRouter } from './modules/notifications/notifications.routes.ts';
+import { createUserQueueRouter } from './modules/queue/queue.user.routes.ts';
 
 export interface AppOptions {
   resolveIdentity?: IdentityResolver;
@@ -38,8 +40,10 @@ export function createApp(store: Store = createStore(), options: AppOptions = {}
 
   app.use('/api/services', createServicesRouter(store));
   app.use('/api/history', createHistoryRouter(store));
+  app.use('/api/notifications', createNotificationsRouter(store));
   app.use('/api/admin/reports', createReportsRouter(store));
   app.use('/api', createAdminQueueRouter(store));
+  app.use('/api', createUserQueueRouter(store));
 
   app.use(notFound);
   app.use(errorHandler);

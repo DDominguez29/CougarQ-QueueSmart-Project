@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import LogoutButton from '../../components/LogoutButton';
+import './AdminDashboardPage.css';
 
 function AdminHeader() {
   return (
@@ -15,6 +17,7 @@ function AdminHeader() {
           {[['/admin', 'Dashboard'], ['/admin/services', 'Services'], ['/admin/queue', 'Queue'], ['/admin/reports', 'Reports']].map(([path, label]) => (
             <NavLink key={path} to={path} end={path === '/admin'} className={({ isActive }) => `admin-nav__link${isActive ? ' admin-nav__link--active' : ''}`}>{label}</NavLink>
           ))}
+          <LogoutButton />
         </nav>
       </div>
     </header>

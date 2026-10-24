@@ -1,3 +1,4 @@
+import UserHeader from './UserHeader';
 import { Link } from 'react-router-dom';
 import type { HistoryItem } from '../../../server/src/shared/models';
 import { displayDate, displayMinutes } from '../../api/display';
@@ -9,22 +10,7 @@ function HistoryPage() {
   const { data, error, loading, refresh } = useApiResource<HistoryItem[]>('/api/history/me');
   return (
     <div className="user-dashboard history-page">
-      <header className="user-header">
-        <div className="user-header__content">
-          <div className="user-brand">
-            <img className="user-brand__logo" src="/logos/uh-logo.png" alt="University of Houston logo" />
-            <div>
-              <p className="user-brand__name">CougarQ</p>
-              <p className="user-brand__subtitle">University of Houston Campus Store/Bookstore</p>
-            </div>
-          </div>
-          <nav className="user-nav" aria-label="User navigation">
-            <Link className="user-nav__link" to="/dashboard">Dashboard</Link>
-            <Link className="user-nav__link" to="/join-queue">Join Queue</Link>
-            <Link className="user-nav__link" to="/history" aria-current="page">History</Link>
-          </nav>
-        </div>
-      </header>
+      <UserHeader />
       <main className="user-main">
         <section className="user-panel" aria-labelledby="history-title">
           <div className="user-panel__header history-heading">

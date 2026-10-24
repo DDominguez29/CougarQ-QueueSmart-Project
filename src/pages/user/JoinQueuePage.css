@@ -3,35 +3,7 @@
     background: #f6f7f9;
     color: #1f2933;
   }
-  
-  .join-queue-header {
-    background: #c8102e;
-    color: white;
-  }
-  
-  .join-queue-header__content {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  
-  .join-queue-header h1 {
-    margin: 0;
-  }
-  
-  .join-queue-header p {
-    margin: 4px 0 0;
-  }
-  
-  .join-queue-back {
-    color: white;
-    text-decoration: none;
-    font-weight: 700;
-  }
-  
+
   .join-queue-main {
     max-width: 900px;
     margin: 0 auto;
@@ -107,9 +79,13 @@
   .join-queue-button:hover {
     background: #960c22;
   }
+
+  .join-queue-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
   
   @media (max-width: 650px) {
-    .join-queue-header__content,
     .join-service-card {
       flex-direction: column;
       align-items: flex-start;

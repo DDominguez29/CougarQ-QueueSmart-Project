@@ -1,6 +1,6 @@
 # QueueSmart backend
 
-Node.js + Express + TypeScript, with in-memory storage for Assignment 3. Administrator queue management, user history, and administrator reporting APIs are implemented. Authentication, user join/leave, and the other modules are separate team integration work. No real database is needed for A3.
+Node.js + Express + TypeScript, with in-memory storage for Assignment 3. The shared server includes authentication, service management, user join/leave, administrator queue management, wait-time APIs, history, notifications, and daily reports. No real database is needed for A3.
 
 ## Run from the repository root
 
@@ -70,21 +70,27 @@ npm run build
 
 Tests exercise health/HTTP errors, queue ordering and transitions, history isolation, validation, permissions, and concurrent serve requests. Add tests as the remaining modules are implemented. A3 targets 70-80% backend coverage. The native coverage command is experimental in Node 22 and prints coverage for loaded source files to the terminal; the listener entry point is not part of this test report.
 
-Run the full `npm run lint` before merging. The existing frontend currently has a Fast Refresh lint error in `src/context/NotificationContext.tsx`; it predates this scaffold.
+Run the full `npm run lint` before merging. The old browser-only notification context has been removed; user pages use the authenticated backend instead.
 
 ## Authentication integration
 
-`createApp(store, { resolveIdentity })` accepts the authentication module's server-side resolver. It receives an Express request and returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. The default is unauthenticated: protected endpoints return `401` until auth connects this resolver in `index.ts`. Header roles and body user IDs are never authentication.
+`createApp(store, { resolveIdentity })` accepts the authentication module's server-side resolver. It receives an Express request and returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. `index.ts` connects `createIdentityResolver(store)` to the shared store. Calling `createApp` without a resolver keeps identity-protected endpoints unauthenticated, which tests use to verify access denial. Header roles and body user IDs are never authentication.
 
-The frontend API client (`src/api/client.ts`) sends same-origin cookies via `credentials: 'include'`. If auth uses bearer tokens, connect its token handling centrally in that client. The current frontend mock login does not authenticate backend requests. Test credentials exist only in test fixtures.
+The frontend API client (`src/api/client.ts`) sends the login bearer token from `src/api/session.ts` and uses relative `/api` URLs through the Vite proxy. `index.ts` seeds local demo accounts: `student@cougarnet.uh.edu` / `Cougar123` and `admin@uh.edu` / `Admin123`. Sessions expire after eight hours and are cleared when the in-memory backend restarts; sign in again after a restart.
+
+Frontend login, registration, and logout requests live in `src/api/auth.ts`. The shared Sign out button calls the logout endpoint and clears the browser session. User pages share `UserHeader.tsx`; administrator pages, including Services, share `AdminHeader.tsx`.
 
 ## Queue and history integration
 
 See the queue/history module guides for endpoints. `src/pages/admin/QueueManagementPage.tsx` and `src/pages/user/HistoryPage.tsx` now read backend responses with loading, empty, and error states. The user dashboard links to history.
 
-The store still starts empty. The service owner must populate `store.services`, and the join/leave owner must write `store.queueEntries`. Store UTC ISO dates, larger numeric priorities first, and unique participation IDs for every visit. Set the optional `serviceName` snapshot on join. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Retain all finished records for history/reports.
+The store factory starts empty; `index.ts` seeds demo accounts and services. User joins write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports.
+
+## Notifications
+
+`server/src/modules/notifications/` replaces the separate `backend/notifications/` demo server. Its routes share the same identity resolver and `store.notifications` instance as queue events. `GET /api/notifications` lists the signed-in user's alerts; `DELETE /api/notifications/:notificationId` dismisses their alert. Joining confirms the visit, and queue changes alert the first two waiting users for that service without repeating dismissed events. See the module guide for details. The user dashboard links to Notifications; no extra server or notification-specific frontend URL is required.
 
 ## Administrator reporting
 
-`GET /api/admin/reports` powers `/admin/reports` and today's dashboard summary. It requires an administrator, defaults to today in America/Chicago, and accepts `startDate`, `endDate`, optional `serviceId`, and `page`. See `modules/reports/README.md` for definitions and examples. Reports use only backend participation records; restarting the in-memory server clears them. Authentication integration is still required for the normal browser flow.
+`GET /api/admin/reports` powers `/admin/reports` and today's dashboard summary. It requires an administrator, defaults to today in America/Chicago, and accepts `startDate`, `endDate`, optional `serviceId`, and `page`. See `modules/reports/README.md` for definitions and examples. Reports use only backend participation records; restarting the in-memory server clears them.
 

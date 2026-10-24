@@ -44,6 +44,8 @@
   
   .user-nav {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 20px;
   }
   
@@ -55,6 +57,11 @@
   
   .user-nav__link:hover {
     text-decoration: underline;
+  }
+
+  .user-nav__link--active {
+    text-decoration: underline;
+    text-underline-offset: 5px;
   }
   
   .user-main {

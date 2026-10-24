@@ -13,7 +13,7 @@ import ServiceManagementPage from './pages/admin/ServiceManagementPage';
 import QueueManagementPage from './pages/admin/QueueManagementPage';
 import ReportsPage from './pages/admin/ReportsPage';
 
-import Notification from './pages/Notifications/notification';
+import NotificationsPage from './pages/user/NotificationsPage';
 
 function App() {
   return (
@@ -27,8 +27,7 @@ function App() {
       <Route path="/join-queue" element={<JoinQueuePage />} />
       <Route path="/queue-status" element={<QueueStatusPage />} />
       <Route path="/history" element={<HistoryPage />} />
-        {/* User */}
-        <Route path="/notifications" element={<Notification />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
       {/* Admin */}
       <Route path="/admin" element={<AdminDashboardPage />} />
       <Route path="/admin/reports" element={<ReportsPage />} />

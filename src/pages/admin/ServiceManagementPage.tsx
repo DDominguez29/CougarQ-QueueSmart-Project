@@ -1,26 +1,14 @@
 import { useEffect, useState } from 'react';
+import type { Service } from '../../../server/src/shared/models';
+import { requestApi, requestError } from '../../api/client';
+import AdminHeader from './AdminHeader';
 import './ServiceManagementPage.css';
-
-type Service = {
-  id: string;
-  name: string;
-  description: string;
-  expectedDurationMinutes: number;
-  priority: number;
-};
 
 type ServiceForm = {
   name: string;
   description: string;
   expectedDurationMinutes: string;
   priority: string;
-};
-
-type ApiErrorResponse = {
-  error?: {
-    code: string;
-    message: string;
-  };
 };
 
 const emptyForm: ServiceForm = {
@@ -49,27 +37,9 @@ function ServiceManagementPage() {
       setLoading(true);
       setError('');
 
-      const response = await fetch('/api/services');
-
-      if (!response.ok) {
-        const result = (await response.json()) as ApiErrorResponse;
-
-        throw new Error(
-          result.error?.message ?? 'Unable to load services.',
-        );
-      }
-
-      const result = (await response.json()) as {
-        data: Service[];
-      };
-
-      setServices(result.data);
+      setServices(await requestApi<Service[]>('/api/services'));
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Unable to load services.');
-      }
+      setError(requestError(err).message);
     } finally {
       setLoading(false);
     }
@@ -90,6 +60,7 @@ function ServiceManagementPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (saving) return;
 
     setError('');
     setMessage('');
@@ -139,26 +110,10 @@ function ServiceManagementPage() {
         ? `/api/services/${editingId}`
         : '/api/services';
 
-      const response = await fetch(url, {
+      await requestApi<Service>(url, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(serviceData),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        const apiError = result as ApiErrorResponse;
-
-        setError(
-          apiError.error?.message ??
-            'Unable to save service.',
-        );
-
-        return;
-      }
 
       setMessage(
         isEditing
@@ -170,8 +125,8 @@ function ServiceManagementPage() {
       setFormData(emptyForm);
 
       await fetchServices();
-    } catch {
-      setError('Unable to connect to the service API.');
+    } catch (err) {
+      setError(requestError(err).message);
     } finally {
       setSaving(false);
     }
@@ -207,6 +162,7 @@ function ServiceManagementPage() {
 
   return (
     <div className="service-page">
+      <AdminHeader />
       <main className="service-main">
         <section className="service-panel">
           <p className="service-eyebrow">

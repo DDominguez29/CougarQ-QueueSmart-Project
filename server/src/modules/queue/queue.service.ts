@@ -3,6 +3,7 @@ import { requireAdministrator } from '../../middleware/identity.ts';
 import { ApiError } from '../../shared/ApiError.ts';
 import type { CompleteServiceResult, Identity, QueueEntry, QueueOverview, QueueView, Service, ServeNextResult } from '../../shared/models.ts';
 import { validateId } from '../../shared/validation.ts';
+import { notifyQueueChanged } from '../notifications/notifications.service.ts';
 
 function findService(store: Store, serviceId: unknown): Service {
   const id = validateId(serviceId, 'serviceId');
@@ -13,7 +14,7 @@ function findService(store: Store, serviceId: unknown): Service {
   return service;
 }
 
-function queueForService(store: Store, service: Service): QueueView {
+export function queueForService(store: Store, service: Service): QueueView {
   const entries = [...store.queueEntries.values()]
     .filter((entry) => entry.serviceId === service.id && entry.status === 'queued')
     // Stable sort keeps insertion order when both priority and arrival time match.
@@ -74,6 +75,7 @@ export function serveNext(
     endedAt: null,
   };
   store.queueEntries.set(started.id, started);
+  notifyQueueChanged(store, service.id);
   return { started: { ...started }, queue: queueForService(store, service) };
 }
 
