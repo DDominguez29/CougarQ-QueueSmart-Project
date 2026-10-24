@@ -1,188 +1,373 @@
-import AdminHeader from './AdminHeader';
-
-import {
-  employeeServiceNotes,
-  knownDigitalMaterials,
-  managedServices,
-  serviceAdjustmentItems,
-  serviceManagementStats,
-  serviceRoutingRules,
-} from '../../design/queueSmartDesign';
-import './AdminDashboardPage.css';
+import { useEffect, useState } from 'react';
 import './ServiceManagementPage.css';
 
-function getServiceBadgeClass(status: string) {
-  if (status === 'Open') {
-    return 'admin-badge admin-badge--success';
-  }
+type Service = {
+  id: string;
+  name: string;
+  description: string;
+  expectedDurationMinutes: number;
+  priority: number;
+};
 
-  if (status === 'Floor support') {
-    return 'admin-badge service-badge--info';
-  }
+type ServiceForm = {
+  name: string;
+  description: string;
+  expectedDurationMinutes: string;
+  priority: string;
+};
 
-  return 'admin-badge admin-badge--warning';
-}
+type ApiErrorResponse = {
+  error?: {
+    code: string;
+    message: string;
+  };
+};
+
+const emptyForm: ServiceForm = {
+  name: '',
+  description: '',
+  expectedDurationMinutes: '',
+  priority: '',
+};
 
 function ServiceManagementPage() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [formData, setFormData] = useState<ServiceForm>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void fetchServices();
+  }, []);
+
+  async function fetchServices() {
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await fetch('/api/services');
+
+      if (!response.ok) {
+        const result = (await response.json()) as ApiErrorResponse;
+
+        throw new Error(
+          result.error?.message ?? 'Unable to load services.',
+        );
+      }
+
+      const result = (await response.json()) as {
+        data: Service[];
+      };
+
+      setServices(result.data);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Unable to load services.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleChange(
+    event:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.ChangeEvent<HTMLTextAreaElement>,
+  ) {
+    const { name, value } = event.target;
+
+    setFormData((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    setError('');
+    setMessage('');
+
+    const expectedDurationMinutes = Number(
+      formData.expectedDurationMinutes,
+    );
+
+    const priority = Number(formData.priority);
+
+    if (!formData.name.trim()) {
+      setError('Service name is required.');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      setError('Description is required.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(expectedDurationMinutes) ||
+      expectedDurationMinutes <= 0
+    ) {
+      setError('Expected duration must be greater than 0.');
+      return;
+    }
+
+    if (!Number.isInteger(priority) || priority < 0) {
+      setError('Priority must be a non-negative integer.');
+      return;
+    }
+
+    const serviceData = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      expectedDurationMinutes,
+      priority,
+    };
+
+    try {
+      setSaving(true);
+
+      const isEditing = editingId !== null;
+
+      const url = isEditing
+        ? `/api/services/${editingId}`
+        : '/api/services';
+
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(serviceData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const apiError = result as ApiErrorResponse;
+
+        setError(
+          apiError.error?.message ??
+            'Unable to save service.',
+        );
+
+        return;
+      }
+
+      setMessage(
+        isEditing
+          ? 'Service updated successfully.'
+          : 'Service created successfully.',
+      );
+
+      setEditingId(null);
+      setFormData(emptyForm);
+
+      await fetchServices();
+    } catch {
+      setError('Unable to connect to the service API.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleEdit(service: Service) {
+    setEditingId(service.id);
+
+    setFormData({
+      name: service.name,
+      description: service.description,
+      expectedDurationMinutes: String(
+        service.expectedDurationMinutes,
+      ),
+      priority: String(service.priority),
+    });
+
+    setMessage('');
+    setError('');
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }
+
+  function handleCancelEdit() {
+    setEditingId(null);
+    setFormData(emptyForm);
+    setMessage('');
+    setError('');
+  }
+
   return (
-    <div className="admin-dashboard service-page">
-      <AdminHeader />
+    <div className="service-page">
+      <main className="service-main">
+        <section className="service-panel">
+          <p className="service-eyebrow">
+            SERVICES
+          </p>
 
-      <main className="admin-main service-main">
-        <section className="service-summary" aria-labelledby="services-title">
-          <div className="admin-panel service-summary__panel">
-            <div className="admin-panel__header service-summary__header">
-              <div>
-                <p className="admin-panel__eyebrow">Service Setup</p>
-                <h1 id="services-title">Service Management</h1>
-                <p className="admin-panel__note">
-                  Control what students can join, what stays walk-up support,
-                  and how CTAP windows are assigned during rush periods.
-                </p>
-              </div>
-              <button className="service-primary-action" type="button">
-                Add Service
+          <h1>Service Management</h1>
+
+          <p className="service-description">
+            Create and update QueueSmart services.
+          </p>
+
+          {message && (
+            <p className="service-message service-message--success">
+              {message}
+            </p>
+          )}
+
+          {error && (
+            <p className="service-message service-message--error">
+              {error}
+            </p>
+          )}
+
+          <form
+            className="service-form"
+            onSubmit={handleSubmit}
+          >
+            <label>
+              Service Name
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                maxLength={100}
+                placeholder="Example: Book Pickup"
+                required
+              />
+            </label>
+
+            <label>
+              Description
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                maxLength={500}
+                placeholder="Describe the service"
+                required
+              />
+            </label>
+
+            <label>
+              Expected Duration (minutes)
+              <input
+                type="number"
+                name="expectedDurationMinutes"
+                value={formData.expectedDurationMinutes}
+                onChange={handleChange}
+                min="1"
+                placeholder="15"
+                required
+              />
+            </label>
+
+            <label>
+              Priority
+              <input
+                type="number"
+                name="priority"
+                value={formData.priority}
+                onChange={handleChange}
+                min="0"
+                step="1"
+                placeholder="Example: 1"
+                required
+              />
+            </label>
+
+            <p className="service-description">
+              Higher priority numbers are ranked first.
+            </p>
+
+            <div className="service-form__actions">
+              <button
+                type="submit"
+                className="service-submit-button"
+                disabled={saving}
+              >
+                {saving
+                  ? 'Saving...'
+                  : editingId !== null
+                    ? 'Update Service'
+                    : 'Create Service'}
               </button>
-            </div>
 
-            <div className="service-stats">
-              {serviceManagementStats.map((stat) => (
-                <article className="service-stat" key={stat.label}>
-                  <p className="service-stat__label">{stat.label}</p>
-                  <p className="service-stat__value">{stat.value}</p>
-                  <p className="service-stat__detail">{stat.detail}</p>
-                </article>
-              ))}
+              {editingId !== null && (
+                <button
+                  type="button"
+                  className="service-cancel-button"
+                  onClick={handleCancelEdit}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+              )}
             </div>
-          </div>
+          </form>
         </section>
 
-        <section className="service-workspace">
-          <div className="admin-panel" aria-labelledby="service-table-title">
-            <div className="admin-panel__header service-table-header">
-              <div>
-                <p className="admin-panel__eyebrow">Live Services</p>
-                <h2 id="service-table-title">Service Directory</h2>
-              </div>
-              <div className="service-tabs" aria-label="Service filters">
-                <button className="service-tab service-tab--active" type="button">
-                  All
-                </button>
-                <button className="service-tab" type="button">
-                  Queue
-                </button>
-                <button className="service-tab" type="button">
-                  Walk-up
-                </button>
-              </div>
-            </div>
+        <section className="service-panel">
+          <p className="service-eyebrow">
+            CURRENT SERVICES
+          </p>
 
-            <div className="service-table-wrap">
-              <table className="admin-table service-table">
-                <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Status</th>
-                    <th>Assigned Area</th>
-                    <th>Waiting</th>
-                    <th>Est. Wait</th>
-                    <th>Intake</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {managedServices.map((service) => (
-                    <tr key={service.name}>
-                      <td>
-                        <div className="service-name">
-                          <span className="service-name__title">
-                            {service.name}
-                          </span>
-                          <span className="service-name__description">
-                            {service.description}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={getServiceBadgeClass(service.status)}>
-                          {service.status}
-                        </span>
-                      </td>
-                      <td>{service.lane}</td>
-                      <td className="service-number">{service.waiting}</td>
-                      <td>{service.estimatedWait}</td>
-                      <td>{service.intake}</td>
-                      <td>
-                        <button className="service-row-action" type="button">
-                          {service.action}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+          <h2>Service List</h2>
 
-        <section className="service-support" aria-label="Service guidance">
-          <section className="admin-panel" aria-labelledby="routing-title">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Routing</p>
-                <h2 id="routing-title">Student Direction Rules</h2>
-              </div>
-            </div>
-            <div className="service-rules">
-              {serviceRoutingRules.map((rule) => (
-                <article className="service-rule" key={rule.situation}>
-                  <div>
-                    <p className="service-rule__situation">{rule.situation}</p>
-                    <p className="service-rule__note">{rule.note}</p>
+          {loading ? (
+            <p className="service-description">
+              Loading services...
+            </p>
+          ) : services.length === 0 ? (
+            <p className="service-description">
+              No services have been created yet.
+            </p>
+          ) : (
+            <div className="service-list">
+              {services.map((service) => (
+                <article
+                  className="service-card"
+                  key={service.id}
+                >
+                  <div className="service-card__content">
+                    <div className="service-card__heading">
+                      <h3>{service.name}</h3>
+
+                      <span className="service-priority">
+                        Priority {service.priority}
+                      </span>
+                    </div>
+
+                    <p>{service.description}</p>
+
+                    <p>
+                      <strong>Expected Duration:</strong>{' '}
+                      {service.expectedDurationMinutes} minutes
+                    </p>
                   </div>
-                  <span>{rule.destination}</span>
+
+                  <button
+                    type="button"
+                    className="service-edit-button"
+                    onClick={() => handleEdit(service)}
+                  >
+                    Edit
+                  </button>
                 </article>
               ))}
             </div>
-          </section>
-
-          <section className="admin-panel" aria-labelledby="adjustments-title">
-            <div className="admin-panel__header">
-              <div>
-                <p className="admin-panel__eyebrow">Rush Mode</p>
-                <h2 id="adjustments-title">Adjustment Notes</h2>
-              </div>
-            </div>
-            <ol className="service-adjustments">
-              {serviceAdjustmentItems.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ol>
-          </section>
-        </section>
-
-        <section className="admin-panel service-notes-panel" aria-labelledby="employee-notes-title">
-          <div className="admin-panel__header">
-            <div>
-              <p className="admin-panel__eyebrow">Employee Notes</p>
-              <h2 id="employee-notes-title">Material Reminders</h2>
-            </div>
-          </div>
-          <div className="service-notes">
-            {employeeServiceNotes.map((note) => (
-              <article className="service-note" key={note.title}>
-                <p className="service-note__title">{note.title}</p>
-                <p className="service-note__detail">{note.detail}</p>
-                {note.title === 'Access codes' && (
-                  <ul className="service-note__materials">
-                    {knownDigitalMaterials.map((material) => (
-                      <li key={material}>{material}</li>
-                    ))}
-                  </ul>
-                )}
-              </article>
-            ))}
-          </div>
+          )}
         </section>
       </main>
     </div>
