@@ -75,14 +75,16 @@ async function startTestServer(identity?: Identity) {
 
 function createAdminIdentity(): Identity {
   return {
+    userId: 'admin-1',
     role: 'admin',
-  } as unknown as Identity;
+  };
 }
 
 function createStudentIdentity(): Identity {
   return {
-    role: 'student',
-  } as unknown as Identity;
+    userId: 'student-1',
+    role: 'user',
+  };
 }
 
 const validService = {

@@ -27,6 +27,7 @@ Agile also fits our team workflow because different parts of the system can be d
 - React: Lets us organize the interface into reusable components, which makes the application easier to build, maintain, and expand.
 - Node.js: Runs the backend and lets the team use JavaScript and TypeScript across the application.
 - Express: Organizes the backend API routes for queue management, visit history, and reporting.
+- PostgreSQL: Stores the checkpoint database schema and persistent service catalog.
 - CSS: Gives us direct control over page layout, styling, and responsive design without adding extra styling framework complexity.
 - Vite: Provides a fast development environment for running and building the React application.
 - React Router: Handles navigation between pages such as login, dashboard, queue status, and admin tools.
@@ -44,7 +45,7 @@ Agile also fits our team workflow because different parts of the system can be d
 - Queue management tools for viewing waiting students, starting the next visit, and completing service
 - Admin reports with completed visits, unique people served, and average queue wait time, using Houston local dates
 
-Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Backend data is currently stored in memory and resets when the server restarts.
+Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Services and their initial queues persist in PostgreSQL. Accounts/sessions, queue visits, alerts, and history/report data still reset on backend restart until their assigned database migrations are complete.
 
 ## Why These Technologies Fit the Project
 
@@ -76,9 +77,14 @@ Install the project dependencies:
 npm install
 ```
 
-Start the backend API:
+Before starting the backend, create a local PostgreSQL database in pgAdmin. Copy `.env.example` to `.env` if you do not already have one, and configure your own DATABASE_URL. See [PostgreSQL setup](docs/database.md) for connection details and password encoding.
+
+Initialize the database and start the backend API:
 
 ```bash
+npm run db:check
+npm run db:setup
+# Optional sample services: npm run db:seed
 npm run dev:server
 ```
 
@@ -101,6 +107,8 @@ View backend test coverage:
 ```bash
 npm run test:coverage
 ```
+
+For combined unit and PostgreSQL coverage, configure a separate TEST_DATABASE_URL and run `npm run test:coverage:db`. See the [schema reference](docs/database-schema.md), [service API](docs/service-api.md), [coverage evidence](docs/coverage.md), and [team handoff](docs/member1-handoff.md).
 
 Check the code with ESLint:
 

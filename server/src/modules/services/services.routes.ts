@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import type { Store } from '../../data/store.ts';
+import { createMemoryServiceRepository, type ServiceRepository } from './services.repository.ts';
 
 import {
   getIdentity,
@@ -13,12 +14,13 @@ import {
   updateService,
 } from './services.service.ts';
 
-export function createServicesRouter(store: Store) {
+export function createServicesRouter(store: Store, repository: ServiceRepository = createMemoryServiceRepository(store.services)) {
   const router = Router();
 
   // Anyone can view available services.
-  router.get('/', (_request, response) => {
-    const services = listServices(store);
+  router.get('/', async (_request, response) => {
+    const services = await listServices(repository);
+    response.set('Cache-Control', 'no-store');
 
     response.json({
       data: services,
@@ -26,11 +28,11 @@ export function createServicesRouter(store: Store) {
   });
 
   // Only administrators can create services.
-  router.post('/', (request, response) => {
+  router.post('/', async (request, response) => {
     requireAdministrator(getIdentity(response));
 
-    const service = createService(
-      store,
+    const service = await createService(
+      repository,
       request.body,
     );
 
@@ -40,11 +42,11 @@ export function createServicesRouter(store: Store) {
   });
 
   // Only administrators can update services.
-  router.put('/:id', (request, response) => {
+  router.put('/:id', async (request, response) => {
     requireAdministrator(getIdentity(response));
 
-    const service = updateService(
-      store,
+    const service = await updateService(
+      repository,
       request.params.id,
       request.body,
     );

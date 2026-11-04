@@ -1,3 +1,5 @@
+import { loadServiceCatalog } from '../services/services.catalog.ts';
+import { createMemoryServiceRepository, type ServiceRepository } from '../services/services.repository.ts';
 import { Router, type RequestHandler } from 'express';
 import type { Store } from '../../data/store.ts';
 import { getIdentity, requireIdentity } from '../../middleware/identity.ts';
@@ -10,23 +12,23 @@ function emptyBody(body: unknown) {
   }
 }
 
-export function createUserQueueRouter(store: Store) {
+export function createUserQueueRouter(store: Store, repository: ServiceRepository = createMemoryServiceRepository(store.services)) {
   const router = Router();
   const signedIn: RequestHandler = (_request, response, next) => {
     requireIdentity(getIdentity(response));
     response.set('Cache-Control', 'no-store');
     next();
   };
-  router.get('/queue/me', signedIn, (_request, response) => {
-    response.json({ data: getUserQueue(store, getIdentity(response)) });
+  router.get('/queue/me', signedIn, async (_request, response) => {
+    response.json({ data: getUserQueue(await loadServiceCatalog(store, repository), getIdentity(response)) });
   });
-  router.post('/services/:serviceId/queue', signedIn, (request, response) => {
+  router.post('/services/:serviceId/queue', signedIn, async (request, response) => {
     emptyBody(request.body);
-    response.status(201).json({ data: joinQueue(store, getIdentity(response), request.params.serviceId) });
+    response.status(201).json({ data: joinQueue(await loadServiceCatalog(store, repository), getIdentity(response), request.params.serviceId) });
   });
-  router.delete('/queue/:entryId', signedIn, (request, response) => {
+  router.delete('/queue/:entryId', signedIn, async (request, response) => {
     emptyBody(request.body);
-    response.json({ data: leaveQueue(store, getIdentity(response), request.params.entryId) });
+    response.json({ data: leaveQueue(await loadServiceCatalog(store, repository), getIdentity(response), request.params.entryId) });
   });
   return router;
 }

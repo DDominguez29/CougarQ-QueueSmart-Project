@@ -28,6 +28,14 @@ test('health endpoint responds with the shared success envelope', async () => {
   assert.deepEqual(await response.json(), { data: { status: 'ok' } });
 });
 
+test('database health is unavailable when no database was injected', async () => {
+  const response = await fetch(`${baseUrl}/api/health/db`);
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: { code: 'DATABASE_UNAVAILABLE', message: 'PostgreSQL is unavailable.' },
+  });
+});
+
 test('unknown endpoints return a JSON 404 error', async () => {
   const response = await fetch(`${baseUrl}/api/missing`);
   assert.equal(response.status, 404);

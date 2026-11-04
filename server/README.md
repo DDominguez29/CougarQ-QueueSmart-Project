@@ -1,6 +1,6 @@
 # QueueSmart backend
 
-Node.js + Express + TypeScript, with in-memory storage for Assignment 3. The shared server includes authentication, service management, user join/leave, administrator queue management, wait-time APIs, history, notifications, and daily reports. No real database is needed for A3.
+Node.js + Express + TypeScript. Checkpoint 4 adds PostgreSQL connectivity, schema setup, database health checks, and persistent service management. Other modules still use Assignment 3's in-memory participation/auth storage while their SQL migrations are completed. See [PostgreSQL setup](../docs/database.md).
 
 ## Run from the repository root
 
@@ -8,6 +8,11 @@ Use Node.js 22.18+ (the setup was verified with 22.20.0). Backend TypeScript run
 
 ```powershell
 npm install
+Copy-Item .env.example .env
+# Edit .env with your PostgreSQL connection settings before continuing.
+npm run db:check
+npm run db:setup
+# Optional for an empty catalog: npm run db:seed
 npm run dev:server
 ```
 
@@ -19,6 +24,8 @@ npm run dev
 
 The API defaults to `http://127.0.0.1:3001`. Check `GET /api/health`; it returns `{"data":{"status":"ok"}}`. Vite proxies frontend requests beginning with `/api` to the backend, so frontend code should use relative URLs such as `fetch('/api/health')`.
 
+`GET /api/health/db` verifies live PostgreSQL connectivity. Startup requires DATABASE_URL and a working database; it does not automatically apply SQL or write demo seeds into PostgreSQL. If `.env` already exists, edit it instead of copying over it.
+
 Set `$env:PORT` to override the API port. If you change it, update the Vite proxy target too. Keep local configuration and credentials out of Git.
 
 ## Layout
@@ -27,7 +34,10 @@ Set `$env:PORT` to override the API port. If you change it, update the Vite prox
 server/
   src/
     app.ts                Express setup and feature router registration
-    index.ts              Starts the HTTP listener
+    index.ts              Startup configuration and shutdown signals
+    start.ts              Database check and HTTP server lifecycle
+    data/database.ts      Shared PostgreSQL pool and schema setup
+    data/schema.sql       PostgreSQL tables, constraints, and views
     data/store.ts         Shared in-memory collections and store factory
     shared/models.ts      Initial service and queue contracts
     shared/ApiError.ts    Common HTTP error
@@ -65,10 +75,14 @@ npm run typecheck:server
 npm run lint:server
 npm test
 npm run test:coverage
+# With a separate TEST_DATABASE_URL configured:
+npm run test:coverage:db
 npm run build
 ```
 
 Tests exercise health/HTTP errors, queue ordering and transitions, history isolation, validation, permissions, and concurrent serve requests. Add tests as the remaining modules are implemented. A3 targets 70-80% backend coverage. The native coverage command is experimental in Node 22 and prints coverage for loaded source files to the terminal; the listener entry point is not part of this test report.
+
+The combined database coverage command adds real SQL setup, constraints, service persistence/restart, and seed tests. See [coverage evidence](../docs/coverage.md) for the Member 1 snapshot; regenerate it after all feature migrations are integrated.
 
 Run the full `npm run lint` before merging. The old browser-only notification context has been removed; user pages use the authenticated backend instead.
 
@@ -84,7 +98,7 @@ Frontend login, registration, and logout requests live in `src/api/auth.ts`. The
 
 See the queue/history module guides for endpoints. `src/pages/admin/QueueManagementPage.tsx` and `src/pages/user/HistoryPage.tsx` now read backend responses with loading, empty, and error states. The user dashboard links to history.
 
-The store factory starts empty; `index.ts` seeds demo accounts and services. User joins write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports.
+The store factory starts empty; startup seeds the two demo accounts. Services come from PostgreSQL; optionally run `npm run db:seed` for the three demo services and queues. Startup no longer recreates demo visits. User joins still write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports until the in-memory backend restarts.
 
 ## Notifications
 

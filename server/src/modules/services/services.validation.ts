@@ -71,12 +71,12 @@ export function validateServiceInput(input: unknown): ServiceInput {
   if (
     typeof body.priority !== 'number' ||
     !Number.isInteger(body.priority) ||
-    body.priority < 0
+    body.priority < 0 || body.priority > 2_147_483_647
   ) {
     throw new ApiError(
       400,
       'INVALID_SERVICE_PRIORITY',
-      'Priority must be a non-negative integer.',
+      'Priority must be an integer between 0 and 2147483647.',
     );
   }
 
