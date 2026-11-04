@@ -1,0 +1,65 @@
+QueueSmart Member 1 coverage evidence
+Date: November 4, 2026 (America/Chicago)
+Command: npm run test:coverage:db
+Node: v22.20.0
+Database: isolated PostgreSQL 18 test cluster
+
+# tests 153
+# pass 153
+# fail 0
+
+# start of coverage report
+# -------------------------------------------------------------------------------
+# file                         | line % | branch % | funcs % | uncovered lines
+# -------------------------------------------------------------------------------
+# server                       |        |          |         |
+#  src                         |        |          |         |
+#   app.ts                     | 100.00 |   100.00 |  100.00 |
+#   data                       |        |          |         |
+#    database.ts               |  96.77 |    94.59 |   77.78 | 51 90-91
+#    seed-services.ts          |  93.75 |    66.67 |   66.67 | 27-28
+#    seed.ts                   | 100.00 |   100.00 |  100.00 |
+#    store.ts                  | 100.00 |   100.00 |  100.00 |
+#   middleware                 |        |          |         |
+#    errors.ts                 |  94.23 |    90.91 |  100.00 | 15-17
+#    identity.ts               | 100.00 |   100.00 |  100.00 |
+#   modules                    |        |          |         |
+#    auth                      |        |          |         |
+#     auth.middleware.ts       | 100.00 |   100.00 |  100.00 |
+#     auth.routes.ts           | 100.00 |    85.71 |  100.00 |
+#     auth.service.ts          | 100.00 |   100.00 |  100.00 |
+#     auth.validation.ts       | 100.00 |    95.56 |  100.00 |
+#    history                   |        |          |         |
+#     history.routes.ts        | 100.00 |   100.00 |  100.00 |
+#     history.service.ts       | 100.00 |   100.00 |  100.00 |
+#    notifications             |        |          |         |
+#     notifications.routes.ts  | 100.00 |   100.00 |  100.00 |
+#     notifications.service.ts | 100.00 |    95.12 |  100.00 |
+#    queue                     |        |          |         |
+#     queue.routes.ts          | 100.00 |   100.00 |  100.00 |
+#     queue.service.ts         | 100.00 |    97.44 |   93.33 |
+#     queue.user.routes.ts     | 100.00 |   100.00 |  100.00 |
+#     queue.user.service.ts    | 100.00 |    95.65 |  100.00 |
+#     queue.validation.ts      | 100.00 |   100.00 |  100.00 |
+#    reports                   |        |          |         |
+#     reports.routes.ts        | 100.00 |   100.00 |  100.00 |
+#     reports.service.ts       | 100.00 |    97.50 |  100.00 |
+#     reports.validation.ts    | 100.00 |   100.00 |  100.00 |
+#    services                  |        |          |         |
+#     services.catalog.ts      | 100.00 |   100.00 |  100.00 |
+#     services.repository.ts   | 100.00 |   100.00 |  100.00 |
+#     services.routes.ts       | 100.00 |   100.00 |  100.00 |
+#     services.service.ts      | 100.00 |   100.00 |  100.00 |
+#     services.validation.ts   |  79.78 |    83.33 |  100.00 | 12-17 33-38 44-49
+#    wait-time                 |        |          |         |
+#     wait-time.routes.ts      | 100.00 |   100.00 |  100.00 |
+#     wait-time.service.ts     | 100.00 |   100.00 |  100.00 |
+#   shared                     |        |          |         |
+#    ApiError.ts               | 100.00 |   100.00 |  100.00 |
+#    participation.ts          | 100.00 |    94.12 |  100.00 |
+#    validation.ts             | 100.00 |   100.00 |  100.00 |
+#   start.ts                   | 100.00 |    85.71 |   80.00 |
+# -------------------------------------------------------------------------------
+# all files                    |  98.44 |    96.79 |   97.30 |
+# -------------------------------------------------------------------------------
+# end of coverage report

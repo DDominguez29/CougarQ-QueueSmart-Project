@@ -1,9 +1,11 @@
 # Service management module
 
-Own service creation, updates, listing, and field validation here.
+Own service creation, updates, listing, field validation, and the shared service repository here.
 
-Suggested files: `services.routes.ts`, `services.service.ts`, and `services.validation.ts`.
+`services.repository.ts` provides PostgreSQL storage in production and an explicit memory adapter for unit tests. Routes validate and authorize writes before invoking it. SQL uses parameters and maps database columns to the existing camelCase API fields.
 
-Use `/api/services` as the route prefix. Use `Service` from `shared/models.ts` and the shared store's `services` map. Expected duration is measured in minutes; priority is a number with larger values ranked first. Coordinate changes to IDs and priority rules with the queue/wait-time owners.
+Endpoints: public `GET /api/services`, admin-only `POST /api/services`, and admin-only `PUT /api/services/:id`. Creating a service atomically creates its open queue. Updating it preserves its ID and queue state. Expected duration supports positive fractional minutes; priority is an integer from 0 to 2147483647, with larger values first. Missing IDs return 404.
 
-Place tests in `server/tests/services.test.ts`.
+`services.catalog.ts` loads a per-request PostgreSQL snapshot for queue/wait-time/history/report routes while their visit storage is migrated separately. Production does not keep a second mutable service catalog or seed it on startup. Service IDs are UUIDs; `npm run db:seed` supplies repeatable example services without overwriting edits.
+
+Unit API tests: `server/tests/services.test.ts`. Real PostgreSQL service/queue transaction and restart tests: `npm run test:db`. See `docs/database.md` for setup and current persistence boundaries.
