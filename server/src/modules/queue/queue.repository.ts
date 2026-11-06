@@ -1,4 +1,3 @@
-
 import type { Pool } from 'pg';
 import { ApiError } from '../../shared/ApiError.ts';
 import type { QueueEntry } from '../../shared/models.ts';
@@ -32,13 +31,26 @@ type JoinedRow = {
   userName: string | null;
 };
 
+type LeftRow = {
+  id: string;
+  userId: string;
+  serviceId: string;
+  priority: number;
+  joinedAt: Date;
+  status: 'left';
+  endedAt: Date;
+  serviceStartedAt: Date | null;
+  completedAt: Date | null;
+  serviceName: string;
+  userName: string | null;
+};
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createPostgresQueueRepository(database: Pool) {
   return {
-
-    // Retrieve all waiting users for a service.
+    // List waiting students in the database-defined priority order.
     async listWaiting(
       serviceId: string,
     ): Promise<(QueueEntry & { position: number })[]> {
@@ -57,8 +69,7 @@ export function createPostgresQueueRepository(database: Pool) {
            qp.completed_at AS "completedAt",
            qp.position::integer AS position
          FROM queue_positions qp
-         LEFT JOIN user_profiles up
-           ON up.user_id = qp.user_id
+         LEFT JOIN user_profiles up ON up.user_id = qp.user_id
          WHERE qp.service_id = $1
          ORDER BY qp.position`,
         [serviceId],
@@ -74,22 +85,15 @@ export function createPostgresQueueRepository(database: Pool) {
         endedAt: row.endedAt?.toISOString() ?? null,
         serviceName: row.serviceName,
         userName: row.userName ?? undefined,
-        serviceStartedAt:
-          row.serviceStartedAt?.toISOString() ?? null,
-        completedAt:
-          row.completedAt?.toISOString() ?? null,
+        serviceStartedAt: row.serviceStartedAt?.toISOString() ?? null,
+        completedAt: row.completedAt?.toISOString() ?? null,
         position: row.position,
       }));
     },
 
-    // Add an authenticated user to an open queue.
-    async join(
-      userId: string,
-      serviceId: string,
-    ): Promise<QueueEntry> {
-
-      if (!uuidPattern.test(userId) ||
-          !uuidPattern.test(serviceId)) {
+    // Join an open queue using an authenticated user's database ID.
+    async join(userId: string, serviceId: string): Promise<QueueEntry> {
+      if (!uuidPattern.test(userId) || !uuidPattern.test(serviceId)) {
         throw new ApiError(
           400,
           'INVALID_INPUT',
@@ -98,7 +102,6 @@ export function createPostgresQueueRepository(database: Pool) {
       }
 
       let entry: JoinedRow | undefined;
-
       try {
         const { rows } = await database.query<JoinedRow>(
           `WITH target_queue AS (
@@ -111,17 +114,8 @@ export function createPostgresQueueRepository(database: Pool) {
            ),
            inserted AS (
              INSERT INTO queue_entries
-               (
-                 queue_id,
-                 user_id,
-                 priority,
-                 service_name_snapshot
-               )
-             SELECT
-               id,
-               $1::uuid,
-               priority,
-               name
+               (queue_id, user_id, priority, service_name_snapshot)
+             SELECT id, $1::uuid, priority, name
              FROM target_queue
              RETURNING *
            )
@@ -139,15 +133,12 @@ export function createPostgresQueueRepository(database: Pool) {
              p.full_name AS "userName"
            FROM inserted e
            JOIN queues q ON q.id = e.queue_id
-           LEFT JOIN user_profiles p
-             ON p.user_id = e.user_id`,
+           LEFT JOIN user_profiles p ON p.user_id = e.user_id`,
           [userId, serviceId],
         );
-
         entry = rows[0];
-
       } catch (error) {
-        // PostgreSQL unique constraint violation.
+        // The schema permits at most one queued/serving entry per user.
         if ((error as { code?: string }).code === '23505') {
           throw new ApiError(
             409,
@@ -155,37 +146,20 @@ export function createPostgresQueueRepository(database: Pool) {
             'You already have an active queue entry.',
           );
         }
-
         throw error;
       }
 
-      // No entry was inserted.
       if (!entry) {
-        const { rows } = await database.query<{
-          status: string;
-        }>(
-          `SELECT status
-           FROM queues
-           WHERE service_id = $1::uuid`,
+        const { rows } = await database.query<{ status: string }>(
+          'SELECT status FROM queues WHERE service_id = $1::uuid',
           [serviceId],
         );
-
         if (rows.length === 0) {
-          throw new ApiError(
-            404,
-            'QUEUE_NOT_FOUND',
-            'Queue not found.',
-          );
+          throw new ApiError(404, 'QUEUE_NOT_FOUND', 'Queue not found.');
         }
-
-        throw new ApiError(
-          409,
-          'QUEUE_CLOSED',
-          'This queue is closed.',
-        );
+        throw new ApiError(409, 'QUEUE_CLOSED', 'This queue is closed.');
       }
 
-      // Convert PostgreSQL timestamps to API-compatible strings.
       return {
         id: entry.id,
         userId: entry.userId,
@@ -194,14 +168,84 @@ export function createPostgresQueueRepository(database: Pool) {
         joinedAt: entry.joinedAt.toISOString(),
         status: entry.status,
         endedAt: entry.endedAt?.toISOString() ?? null,
-        serviceStartedAt:
-          entry.serviceStartedAt?.toISOString() ?? null,
-        completedAt:
-          entry.completedAt?.toISOString() ?? null,
+        serviceStartedAt: entry.serviceStartedAt?.toISOString() ?? null,
+        completedAt: entry.completedAt?.toISOString() ?? null,
         serviceName: entry.serviceName,
         userName: entry.userName ?? undefined,
       };
     },
 
+    // Cancel the caller's waiting visit, retaining it in SQL for history.
+    async leave(userId: string, entryId: string): Promise<QueueEntry> {
+      if (!uuidPattern.test(userId) || !uuidPattern.test(entryId)) {
+        throw new ApiError(
+          400,
+          'INVALID_INPUT',
+          'Valid user and entry IDs are required.',
+        );
+      }
+
+      const { rows } = await database.query<LeftRow>(
+        `WITH updated AS (
+           UPDATE queue_entries AS e
+           SET
+             status = 'left',
+             ended_at = GREATEST(CURRENT_TIMESTAMP, e.joined_at)
+           WHERE e.id = $2::uuid
+             AND e.user_id = $1::uuid
+             AND e.status = 'queued'
+           RETURNING e.*
+         )
+         SELECT
+           u.id,
+           u.user_id AS "userId",
+           q.service_id AS "serviceId",
+           u.priority,
+           u.joined_at AS "joinedAt",
+           u.status,
+           u.ended_at AS "endedAt",
+           u.service_started_at AS "serviceStartedAt",
+           u.completed_at AS "completedAt",
+           u.service_name_snapshot AS "serviceName",
+           p.full_name AS "userName"
+         FROM updated u
+         JOIN queues q ON q.id = u.queue_id
+         LEFT JOIN user_profiles p ON p.user_id = u.user_id`,
+        [userId, entryId],
+      );
+
+      const entry = rows[0];
+      if (!entry) {
+        const existing = await database.query<{ status: string }>(
+          `SELECT status
+           FROM queue_entries
+           WHERE id = $1::uuid AND user_id = $2::uuid`,
+          [entryId, userId],
+        );
+
+        if (existing.rows.length === 0) {
+          throw new ApiError(404, 'ENTRY_NOT_FOUND', 'Queue entry not found.');
+        }
+        throw new ApiError(
+          409,
+          'NOT_WAITING',
+          'Only a waiting visit can leave the queue.',
+        );
+      }
+
+      return {
+        id: entry.id,
+        userId: entry.userId,
+        serviceId: entry.serviceId,
+        priority: entry.priority,
+        joinedAt: entry.joinedAt.toISOString(),
+        status: entry.status,
+        endedAt: entry.endedAt.toISOString(),
+        serviceStartedAt: entry.serviceStartedAt?.toISOString() ?? null,
+        completedAt: entry.completedAt?.toISOString() ?? null,
+        serviceName: entry.serviceName,
+        userName: entry.userName ?? undefined,
+      };
+    },
   };
 }
