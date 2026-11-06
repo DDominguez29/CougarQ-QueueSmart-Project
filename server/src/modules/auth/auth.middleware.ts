@@ -1,12 +1,14 @@
 import type { Request, RequestHandler, Response } from 'express';
-import type { Store } from '../../data/store.ts';
 import { ApiError } from '../../shared/ApiError.ts';
+import type { Identity } from '../../shared/models.ts';
 import type { UserRole } from './auth.models.ts';
+import type { AuthRepository } from './auth.repository.ts';
 import { resolveSession } from './auth.service.ts';
 
 export interface AuthIdentity {
   userId: string;
   role: UserRole;
+  name: string;
   token: string;
 }
 
@@ -17,23 +19,24 @@ export function readBearerToken(header: string | undefined) {
   return token;
 }
 
-export function authenticate(store: Store, request: Request): AuthIdentity | null {
+export async function authenticate(accounts: AuthRepository, request: Request): Promise<AuthIdentity | null> {
   const token = readBearerToken(request.get('Authorization'));
-  const user = token ? resolveSession(store, token) : undefined;
-  if (!token || !user) return null;
-  return { userId: user.id, role: user.role, token };
+  if (!token) return null;
+  const user = await resolveSession(accounts, token);
+  if (!user) return null;
+  return { userId: user.id, role: user.role, name: user.fullName, token };
 }
 
-export function createIdentityResolver(store: Store) {
-  return (request: Request) => {
-    const identity = authenticate(store, request);
-    return identity ? { userId: identity.userId, role: identity.role } : null;
+export function createIdentityResolver(accounts: AuthRepository) {
+  return async (request: Request): Promise<Identity | null> => {
+    const identity = await authenticate(accounts, request);
+    return identity ? { userId: identity.userId, role: identity.role, name: identity.name } : null;
   };
 }
 
-export function requireAuth(store: Store): RequestHandler {
-  return (request, response, next) => {
-    const identity = authenticate(store, request);
+export function requireAuth(accounts: AuthRepository): RequestHandler {
+  return async (request, response, next) => {
+    const identity = await authenticate(accounts, request);
     if (!identity) {
       next(new ApiError(401, 'UNAUTHORIZED', 'Sign in to continue.'));
       return;

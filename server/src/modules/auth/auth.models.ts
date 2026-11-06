@@ -4,6 +4,7 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
+  phone: string | null;
   passwordHash: string;
   role: UserRole;
   createdAt: string;
@@ -12,7 +13,8 @@ export interface User {
 export type PublicUser = Omit<User, 'passwordHash'>;
 
 export interface Session {
-  token: string;
+  tokenHash: string;
   userId: string;
+  createdAt: number;
   expiresAt: number;
 }

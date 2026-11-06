@@ -8,6 +8,7 @@ import {
   seedDemoQueue,
   seedDemoServices,
 } from '../src/data/seed.ts';
+import { createMemoryAuthRepository } from '../src/modules/auth/auth.repository.ts';
 import { login } from '../src/modules/auth/auth.service.ts';
 import { estimateForNewEntry } from '../src/modules/wait-time/wait-time.service.ts';
 
@@ -22,12 +23,12 @@ function seededStore(now: number) {
 describe('demo queue seed', () => {
   const now = Date.UTC(2026, 9, 23, 18, 0);
 
-  test('creates a student account and a visit for each demo student', () => {
+  test('creates a student account and a visit for each demo student', async () => {
     const store = seededStore(now);
     assert.equal(store.queueEntries.size, DEMO_QUEUE.length);
     assert.equal(store.users.size, DEMO_QUEUE.length + 2);
 
-    const result = login(store, { email: 'mpatel14@cougarnet.uh.edu', password: DEMO_STUDENT_PASSWORD });
+    const result = await login(createMemoryAuthRepository(store), { email: 'mpatel14@cougarnet.uh.edu', password: DEMO_STUDENT_PASSWORD });
     assert.equal(result.user.fullName, 'Maya Patel');
     assert.equal(result.user.role, 'user');
   });

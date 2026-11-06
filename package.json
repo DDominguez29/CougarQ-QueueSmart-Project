@@ -18,9 +18,9 @@
     "lint": "eslint .",
     "lint:server": "eslint server",
     "test": "node --test server/tests/*.test.ts",
-    "test:db": "node --env-file-if-exists=.env --test server/tests/database.integration.ts",
+    "test:db": "node --env-file-if-exists=.env --test server/tests/*.integration.ts",
     "test:coverage": "node --experimental-test-coverage --test --test-coverage-include=server/src/** server/tests/*.test.ts",
-    "test:coverage:db": "node --env-file-if-exists=.env --experimental-test-coverage --test --test-coverage-include=server/src/** server/tests/*.test.ts server/tests/database.integration.ts",
+    "test:coverage:db": "node --env-file-if-exists=.env --experimental-test-coverage --test --test-coverage-include=server/src/** server/tests/*.test.ts server/tests/*.integration.ts",
     "preview": "vite preview"
   },
   "dependencies": {

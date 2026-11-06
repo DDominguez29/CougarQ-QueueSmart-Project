@@ -9,9 +9,9 @@ export async function loginRequest(email: string, password: string) {
   return result.user;
 }
 
-export async function registerRequest(fullName: string, email: string, password: string) {
+export async function registerRequest(fullName: string, email: string, password: string, phone = '') {
   const result = await requestApi<{ user: SessionUser }>('/api/auth/register', {
-    method: 'POST', body: JSON.stringify({ fullName, email, password }),
+    method: 'POST', body: JSON.stringify({ fullName, email, password, phone: phone || null }),
   });
   return result.user;
 }
