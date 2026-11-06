@@ -85,11 +85,10 @@ routes share the existing in-memory visit/auth/notification records while the
 other members migrate their assigned features. The service repository never
 writes a parallel in-memory copy in production.
 
-Accounts, sessions, queue participation, notifications, history records, and report
-data are still transient. Startup keeps the two existing demo login accounts,
-but no longer invents demo service or visit records on every restart. Log in again
-after restarting until Member 2 implements session persistence. Use `db:seed` or
-the administrator's Service Management form to populate an empty service catalog.
+Accounts, profiles, and sessions are stored in PostgreSQL, so logins survive a
+backend restart. `db:seed` adds the two demo accounts and three demo services.
+Queue participation, notifications, history records, and report data are still
+transient until their assigned migrations are complete.
 
 Member 3 still owns SQL-backed joining/leaving/serving and enforcement of queue
 open/closed state. This change creates the queue records that migration needs.

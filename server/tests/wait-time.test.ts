@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { after, before, describe, test } from 'node:test';
 import { createStore, type Store } from '../src/data/store.ts';
 import { DEMO_SERVICES, seedDemoAccounts, seedDemoServices } from '../src/data/seed.ts';
+import { createMemoryAuthRepository } from '../src/modules/auth/auth.repository.ts';
 import { login } from '../src/modules/auth/auth.service.ts';
 import {
   compareQueueEntries,
@@ -186,8 +187,9 @@ describe('wait-time endpoints', () => {
   before(async () => {
     const store = seededStore();
     seedDemoAccounts(store);
-    studentToken = login(store, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' }).token;
-    adminToken = login(store, { email: 'admin@uh.edu', password: 'Admin123' }).token;
+    const accounts = createMemoryAuthRepository(store);
+    studentToken = (await login(accounts, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' })).token;
+    adminToken = (await login(accounts, { email: 'admin@uh.edu', password: 'Admin123' })).token;
     const studentId = [...store.users.values()].find((user) => user.role === 'user')!.id;
     otherEntryId = addEntry(store, { userId: 'someone-else', serviceId: 'ctap-main' }).id;
     studentEntryId = addEntry(store, { userId: studentId, serviceId: 'ctap-express' }).id;

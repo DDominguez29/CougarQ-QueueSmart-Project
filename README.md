@@ -45,7 +45,7 @@ Agile also fits our team workflow because different parts of the system can be d
 - Queue management tools for viewing waiting students, starting the next visit, and completing service
 - Admin reports with completed visits, unique people served, and average queue wait time, using Houston local dates
 
-Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Services and their initial queues persist in PostgreSQL. Accounts/sessions, queue visits, alerts, and history/report data still reset on backend restart until their assigned database migrations are complete.
+Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Services, their initial queues, accounts, profiles, and sessions persist in PostgreSQL. Queue visits, alerts, and history/report data still reset on backend restart until their assigned database migrations are complete.
 
 ## Why These Technologies Fit the Project
 
