@@ -10,6 +10,7 @@ import type { Service, QueueEntry, QueueOverview, AdminReport, HistoryItem } fro
 import { startBackend, stopBackend } from '../src/start.ts';
 import { createPostgresServiceRepository } from '../src/modules/services/services.repository.ts';
 import { seedDatabaseServices, DATABASE_DEMO_SERVICES } from '../src/data/seed-services.ts';
+import { seedDatabaseAccounts } from '../src/data/seed-accounts.ts';
 
 // Explicit opt-in. Never silently reuse DATABASE_URL for integration tests.
 const config = getDatabaseConfig({ DATABASE_URL: process.env.TEST_DATABASE_URL });
@@ -104,6 +105,7 @@ test('PostgreSQL connectivity and application startup', async (t) => {
 
   await t.test('service API persists SQL changes across backend restarts and shares its catalog', async () => {
     const serverConfig = { ...config, options: `-c search_path=${schema}` };
+    await seedDatabaseAccounts(database);
     let pool = createDatabasePool(serverConfig);
     let server = await startBackend(pool, 0);
     let baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -121,7 +123,7 @@ test('PostgreSQL connectivity and application startup', async (t) => {
       return result.body.data.token;
     }
     try {
-      let adminToken = await login('admin@uh.edu', 'Admin123');
+      const adminToken = await login('admin@uh.edu', 'Admin123');
       const studentToken = await login('student@cougarnet.uh.edu', 'Cougar123');
       const input = { name: "Books'); DROP TABLE services; --", description: 'Saved through the API.', expectedDurationMinutes: 2.5, priority: 4 };
       assert.equal((await request('/services', 'POST', input)).status, 401);
@@ -170,8 +172,7 @@ test('PostgreSQL connectivity and application startup', async (t) => {
       baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       const persisted = (await request<Service[]>('/services')).body.data;
       assert.deepEqual(persisted, [{ id: service.id, ...updated, name: 'Edited in PostgreSQL' }]);
-      // Sessions remain in memory until Member 2 migrates them; sign in again.
-      adminToken = await login('admin@uh.edu', 'Admin123');
+      // Sessions are stored in PostgreSQL, so the earlier token still works.
       const lower = await request<Service>('/services', 'POST', { ...input, name: 'Lower Priority', priority: 1 }, adminToken);
       assert.equal(lower.status, 201);
       assert.deepEqual((await request<Service[]>('/services')).body.data.map((item: { id: string }) => item.id), [service.id, lower.body.data.id]);

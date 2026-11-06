@@ -6,10 +6,12 @@ export const AUTH_LIMITS = {
   emailMax: 100,
   passwordMin: 8,
   passwordMax: 64,
+  phoneMax: 30,
 };
 
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_FORMAT = /^[A-Za-z][A-Za-z '.-]*$/;
+const PHONE_FORMAT = /^\+?[0-9() .-]+$/;
 
 function getDomain(email: string) {
   return email.trim().toLowerCase().split('@')[1] ?? '';
@@ -83,5 +85,18 @@ export function validateNewPassword(value: string) {
 export function validateConfirmPassword(password: string, confirm: string) {
   if (!confirm) return 'Please confirm your password.';
   if (password !== confirm) return 'Passwords do not match.';
+  return undefined;
+}
+
+export function validatePhone(value: string) {
+  const phone = value.trim();
+  if (!phone) return undefined;
+  if (phone.length > AUTH_LIMITS.phoneMax) {
+    return `Phone must be ${AUTH_LIMITS.phoneMax} characters or fewer.`;
+  }
+  const digits = phone.replace(/\D/g, '').length;
+  if (!PHONE_FORMAT.test(phone) || digits < 7 || digits > 15) {
+    return 'Enter a valid phone number.';
+  }
   return undefined;
 }

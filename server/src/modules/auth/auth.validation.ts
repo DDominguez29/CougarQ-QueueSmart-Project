@@ -8,15 +8,18 @@ export const AUTH_LIMITS = {
   emailMax: 100,
   passwordMin: 8,
   passwordMax: 64,
+  phoneMax: 30,
 };
 
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_FORMAT = /^[A-Za-z][A-Za-z '.-]*$/;
+const PHONE_FORMAT = /^\+?[0-9() .-]+$/;
 
 export interface RegisterInput {
   fullName: string;
   email: string;
   password: string;
+  phone?: string | null;
 }
 
 export interface LoginInput {
@@ -61,6 +64,21 @@ function checkEmail(value: unknown) {
   return email;
 }
 
+function checkPhone(value: unknown) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') invalid('Phone must be a string.');
+  const phone = value.trim();
+  if (!phone) return null;
+  if (phone.length > AUTH_LIMITS.phoneMax) {
+    invalid(`Phone must be ${AUTH_LIMITS.phoneMax} characters or fewer.`);
+  }
+  const digits = phone.replace(/\D/g, '').length;
+  if (!PHONE_FORMAT.test(phone) || digits < 7 || digits > 15) {
+    invalid('Phone must be a valid phone number.');
+  }
+  return phone;
+}
+
 export function validateRegister(body: unknown): RegisterInput {
   const data = requireObject(body);
 
@@ -89,7 +107,7 @@ export function validateRegister(body: unknown): RegisterInput {
     invalid('Password must include at least one letter and one number.');
   }
 
-  return { fullName, email, password };
+  return { fullName, email, password, phone: checkPhone(data.phone) };
 }
 
 export function validateLogin(body: unknown): LoginInput {
