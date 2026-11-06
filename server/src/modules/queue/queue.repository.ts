@@ -65,6 +65,13 @@ type EntryRow = {
   userName: string | null;
 };
 
+type QueueStatusRow = {
+  id: string;
+  serviceId: string;
+  status: 'open' | 'closed';
+  updatedAt: Date;
+};
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -335,8 +342,7 @@ export function createPostgresQueueRepository(
         entry = rows[0];
       } catch (error) {
         if (
-          (error as { code?: string }).code ===
-          '23505'
+          (error as { code?: string }).code === '23505'
         ) {
           throw new ApiError(
             409,
@@ -557,7 +563,7 @@ export function createPostgresQueueRepository(
           );
         }
 
-        // Prevent a stale admin request from selecting
+        // Prevent a stale request from selecting
         // the wrong student.
         if (next[0].id !== expectedEntryId) {
           throw new ApiError(
@@ -715,6 +721,68 @@ export function createPostgresQueueRepository(
       } finally {
         client.release();
       }
+    },
+
+    // -----------------------------------------
+    // 6. OPEN / CLOSE QUEUE (ADMINISTRATOR)
+    // -----------------------------------------
+
+    async setQueueStatus(
+      serviceId: string,
+      status: 'open' | 'closed',
+    ): Promise<{
+      id: string;
+      serviceId: string;
+      status: 'open' | 'closed';
+      updatedAt: string;
+    }> {
+      if (!uuidPattern.test(serviceId)) {
+        throw new ApiError(
+          400,
+          'INVALID_INPUT',
+          'A valid service ID is required.',
+        );
+      }
+
+      if (status !== 'open' && status !== 'closed') {
+        throw new ApiError(
+          400,
+          'INVALID_INPUT',
+          'Queue status must be open or closed.',
+        );
+      }
+
+      // Update the queue status atomically.
+      // Existing entries are preserved when closing.
+      const { rows } =
+        await database.query<QueueStatusRow>(
+          `UPDATE queues
+           SET status = $2
+           WHERE service_id = $1::uuid
+           RETURNING
+             id,
+             service_id AS "serviceId",
+             status,
+             updated_at AS "updatedAt"`,
+          [serviceId, status],
+        );
+
+      const queue = rows[0];
+
+      if (!queue) {
+        throw new ApiError(
+          404,
+          'QUEUE_NOT_FOUND',
+          'Queue not found.',
+        );
+      }
+
+      return {
+        id: queue.id,
+        serviceId: queue.serviceId,
+        status: queue.status,
+        updatedAt: queue.updatedAt.toISOString(),
+      };
     },
   };
 }
