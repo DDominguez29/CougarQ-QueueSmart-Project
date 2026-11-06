@@ -37,7 +37,7 @@ For ties in priority, SQL orders by created_at and ID for a stable result.
 
 Protected requests use `Authorization: Bearer <token>` from the existing login
 endpoint. Roles and user IDs must come from the server's identity resolver.
-Restarting currently invalidates sessions; sign in again after a restart.
+Sessions are stored in PostgreSQL and remain valid after a restart.
 
 | HTTP | Examples |
 | --- | --- |
@@ -71,5 +71,5 @@ queue creation rollback, SQL-looking text stored safely, missing IDs, user/admin
 permissions, fresh catalog reads, and repeatable sample seeds.
 
 Manual check: edit a service in Service Management, stop/restart the backend,
-sign in again, and confirm the edited values remain. This was also confirmed by
+and confirm the edited values remain. This was also confirmed by
 the project owner on November 4, 2026.

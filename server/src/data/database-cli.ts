@@ -2,6 +2,7 @@ import {
   checkDatabaseConnection, ConfigurationError, createDatabasePool,
   databaseErrorMessage, initializeSchema,
 } from './database.ts';
+import { seedDatabaseAccounts } from './seed-accounts.ts';
 import { seedDatabaseServices } from './seed-services.ts';
 
 async function main() {
@@ -18,6 +19,7 @@ async function main() {
         ? 'QueueSmart schema created: 7 tables and 2 views.'
         : 'QueueSmart schema already exists. No changes made.');
     } else if (command === 'seed') {
+      console.log(`Demo accounts added: ${await seedDatabaseAccounts(database)}. Existing accounts were preserved.`);
       console.log(`Demo services added: ${await seedDatabaseServices(database)}. Existing services and queue status were preserved.`);
     } else {
       console.log('PostgreSQL connection successful.');

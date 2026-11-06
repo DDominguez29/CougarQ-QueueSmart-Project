@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { test, type TestContext } from 'node:test';
 import { createApp } from '../src/app.ts';
 import { createIdentityResolver } from '../src/modules/auth/auth.middleware.ts';
+import { createMemoryAuthRepository } from '../src/modules/auth/auth.repository.ts';
 import { createUser } from '../src/modules/auth/auth.service.ts';
 import { createNotificationStore } from '../src/modules/notifications/notifications.service.ts';
 import { makeStore } from './fixtures.ts';
@@ -110,7 +111,7 @@ async function authenticatedApp(t: TestContext) {
     { fullName: 'Bookstore Admin', email: 'admin@uh.edu', role: 'admin' },
   ] as const;
   for (const { role, ...account } of accounts) createUser(store, { ...account, password: 'Cougar123' }, role);
-  const server = createApp(store, { resolveIdentity: createIdentityResolver(store) }).listen(0, '127.0.0.1');
+  const server = createApp(store, { resolveIdentity: createIdentityResolver(createMemoryAuthRepository(store)) }).listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => stopServer(server));
   const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

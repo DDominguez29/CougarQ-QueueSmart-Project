@@ -90,7 +90,7 @@ Run the full `npm run lint` before merging. The old browser-only notification co
 
 `createApp(store, { resolveIdentity })` accepts the authentication module's server-side resolver. It receives an Express request and returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. `index.ts` connects `createIdentityResolver(store)` to the shared store. Calling `createApp` without a resolver keeps identity-protected endpoints unauthenticated, which tests use to verify access denial. Header roles and body user IDs are never authentication.
 
-The frontend API client (`src/api/client.ts`) sends the login bearer token from `src/api/session.ts` and uses relative `/api` URLs through the Vite proxy. `index.ts` seeds local demo accounts: `student@cougarnet.uh.edu` / `Cougar123` and `admin@uh.edu` / `Admin123`. Sessions expire after eight hours and are cleared when the in-memory backend restarts; sign in again after a restart.
+The frontend API client (`src/api/client.ts`) sends the login bearer token from `src/api/session.ts` and uses relative `/api` URLs through the Vite proxy. `npm run db:seed` adds the demo accounts `student@cougarnet.uh.edu` / `Cougar123` and `admin@uh.edu` / `Admin123`. Accounts, profiles, and sessions are stored in PostgreSQL; sessions expire after eight hours and survive backend restarts.
 
 Frontend login, registration, and logout requests live in `src/api/auth.ts`. The shared Sign out button calls the logout endpoint and clears the browser session. User pages share `UserHeader.tsx`; administrator pages, including Services, share `AdminHeader.tsx`.
 
@@ -98,7 +98,7 @@ Frontend login, registration, and logout requests live in `src/api/auth.ts`. The
 
 See the queue/history module guides for endpoints. `src/pages/admin/QueueManagementPage.tsx` and `src/pages/user/HistoryPage.tsx` now read backend responses with loading, empty, and error states. The user dashboard links to history.
 
-The store factory starts empty; startup seeds the two demo accounts. Services come from PostgreSQL; optionally run `npm run db:seed` for the three demo services and queues. Startup no longer recreates demo visits. User joins still write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports until the in-memory backend restarts.
+The store factory starts empty. Accounts and services come from PostgreSQL; optionally run `npm run db:seed` for the three demo services and queues. Startup no longer recreates demo visits. User joins still write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports until the in-memory backend restarts.
 
 ## Notifications
 

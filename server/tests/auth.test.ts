@@ -14,10 +14,14 @@ import {
   requireAuth,
   requireRole,
 } from '../src/modules/auth/auth.middleware.ts';
+import { createMemoryAuthRepository } from '../src/modules/auth/auth.repository.ts';
 import {
   SESSION_TTL_MS,
+  createUser,
   hashPassword,
+  hashToken,
   login,
+  logout,
   registerUser,
   resolveSession,
   verifyPassword,
@@ -56,6 +60,22 @@ describe('registration validation', () => {
   test('rejects a body that is not an object', () => {
     expectValidationError(() => validateRegister(null), /JSON object/);
     expectValidationError(() => validateRegister(['a']), /JSON object/);
+  });
+
+  test('accepts an optional phone number and trims it', () => {
+    assert.equal(validateRegister({ ...validRegistration, phone: '  (713) 555-0142 ' }).phone, '(713) 555-0142');
+    assert.equal(validateRegister({ ...validRegistration, phone: '+1 713.555.0142' }).phone, '+1 713.555.0142');
+    assert.equal(validateRegister(validRegistration).phone, null);
+    assert.equal(validateRegister({ ...validRegistration, phone: '   ' }).phone, null);
+    assert.equal(validateRegister({ ...validRegistration, phone: null }).phone, null);
+  });
+
+  test('rejects invalid phone numbers', () => {
+    expectValidationError(() => validateRegister({ ...validRegistration, phone: 7135550142 }), /Phone must be a string/);
+    expectValidationError(() => validateRegister({ ...validRegistration, phone: 'call me' }), /valid phone/);
+    expectValidationError(() => validateRegister({ ...validRegistration, phone: '12345' }), /valid phone/);
+    expectValidationError(() => validateRegister({ ...validRegistration, phone: '1'.repeat(16) }), /valid phone/);
+    expectValidationError(() => validateRegister({ ...validRegistration, phone: '1'.repeat(31) }), /30 characters/);
   });
 
   test('requires every field', () => {
@@ -120,39 +140,85 @@ describe('auth service', () => {
     assert.equal(verifyPassword('Cougar123', 'malformed'), false);
   });
 
-  test('registers students with the user role and never exposes the hash', () => {
+  test('registers students with the user role, a profile, and no exposed hash', async () => {
     const store = createStore();
-    const user = registerUser(store, validRegistration);
+    const accounts = createMemoryAuthRepository(store);
+    const user = await registerUser(accounts, { ...validRegistration, phone: '713-555-0142' });
     assert.equal(user.role, 'user');
+    assert.equal(user.phone, '713-555-0142');
     assert.equal('passwordHash' in user, false);
     assert.equal(store.users.size, 1);
+    const saved = [...store.users.values()][0];
+    assert.notEqual(saved.passwordHash, validRegistration.password);
+    assert.equal(verifyPassword(validRegistration.password, saved.passwordHash), true);
   });
 
-  test('blocks duplicate emails', () => {
+  test('saves a missing phone as null', async () => {
+    const accounts = createMemoryAuthRepository(createStore());
+    assert.equal((await registerUser(accounts, validRegistration)).phone, null);
+  });
+
+  test('blocks duplicate emails', async () => {
+    const accounts = createMemoryAuthRepository(createStore());
+    await registerUser(accounts, validRegistration);
+    await assert.rejects(registerUser(accounts, validRegistration), { status: 409, code: 'EMAIL_TAKEN' });
+  });
+
+  test('blocks duplicate emails in the synchronous test helper too', () => {
     const store = createStore();
-    registerUser(store, validRegistration);
-    assert.throws(() => registerUser(store, validRegistration), { status: 409, code: 'EMAIL_TAKEN' });
+    createUser(store, validRegistration);
+    assert.throws(() => createUser(store, validRegistration), { status: 409, code: 'EMAIL_TAKEN' });
   });
 
-  test('logs in with the right password and rejects the wrong one', () => {
+  test('logs in with the right password and rejects the wrong one', async () => {
     const store = createStore();
     seedDemoAccounts(store);
-    const result = login(store, { email: 'admin@uh.edu', password: 'Admin123' });
+    const accounts = createMemoryAuthRepository(store);
+    const result = await login(accounts, { email: 'admin@uh.edu', password: 'Admin123' });
     assert.equal(result.user.role, 'admin');
-    assert.equal(resolveSession(store, result.token)?.email, 'admin@uh.edu');
-    assert.throws(() => login(store, { email: 'admin@uh.edu', password: 'Wrong123' }), { status: 401 });
-    assert.throws(() => login(store, { email: 'nobody@uh.edu', password: 'Admin123' }), { status: 401 });
+    assert.equal((await resolveSession(accounts, result.token))?.email, 'admin@uh.edu');
+    await assert.rejects(login(accounts, { email: 'admin@uh.edu', password: 'Wrong123' }), { status: 401 });
+    await assert.rejects(login(accounts, { email: 'nobody@uh.edu', password: 'Admin123' }), { status: 401 });
   });
 
-  test('expires sessions after the time limit', () => {
+  test('stores only a SHA-256 digest of the session token', async () => {
     const store = createStore();
     seedDemoAccounts(store);
-    const start = 1_000_000;
-    const { token } = login(store, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' }, start);
-    assert.ok(resolveSession(store, token, start + SESSION_TTL_MS - 1));
-    assert.equal(resolveSession(store, token, start + SESSION_TTL_MS), undefined);
+    const { token } = await login(createMemoryAuthRepository(store), { email: 'admin@uh.edu', password: 'Admin123' });
     assert.equal(store.sessions.has(token), false);
-    assert.equal(resolveSession(store, 'unknown-token'), undefined);
+    assert.equal(store.sessions.has(hashToken(token)), true);
+    assert.match(hashToken(token), /^[0-9a-f]{64}$/);
+  });
+
+  test('expires sessions after the time limit', async () => {
+    const store = createStore();
+    seedDemoAccounts(store);
+    const accounts = createMemoryAuthRepository(store);
+    const start = 1_000_000;
+    const { token } = await login(accounts, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' }, start);
+    assert.ok(await resolveSession(accounts, token, start + SESSION_TTL_MS - 1));
+    assert.equal(await resolveSession(accounts, token, start + SESSION_TTL_MS), undefined);
+    assert.equal(store.sessions.size, 0);
+    assert.equal(await resolveSession(accounts, 'unknown-token'), undefined);
+  });
+
+  test('logout removes the session', async () => {
+    const store = createStore();
+    seedDemoAccounts(store);
+    const accounts = createMemoryAuthRepository(store);
+    const { token } = await login(accounts, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' });
+    await logout(accounts, token);
+    assert.equal(await resolveSession(accounts, token), undefined);
+  });
+
+  test('ignores a session whose account no longer exists', async () => {
+    const store = createStore();
+    seedDemoAccounts(store);
+    const accounts = createMemoryAuthRepository(store);
+    const { token, user } = await login(accounts, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' });
+    store.users.delete(user.id);
+    assert.equal(await resolveSession(accounts, token), undefined);
+    assert.equal(await accounts.findById(user.id), undefined);
   });
 
   test('reads only well-formed bearer tokens', () => {
@@ -236,11 +302,12 @@ describe('role middleware', () => {
   before(async () => {
     const store = createStore();
     seedDemoAccounts(store);
-    studentToken = login(store, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' }).token;
-    adminToken = login(store, { email: 'admin@uh.edu', password: 'Admin123' }).token;
+    const accounts = createMemoryAuthRepository(store);
+    studentToken = (await login(accounts, { email: 'student@cougarnet.uh.edu', password: 'Cougar123' })).token;
+    adminToken = (await login(accounts, { email: 'admin@uh.edu', password: 'Admin123' })).token;
 
     const app = express();
-    app.get('/admin-only', requireAuth(store), requireRole('admin'), (_request, response) => {
+    app.get('/admin-only', requireAuth(accounts), requireRole('admin'), (_request, response) => {
       response.json({ data: { role: getAuth(response).role } });
     });
     app.get('/no-auth', requireRole('admin'), (_request, response) => {
@@ -278,16 +345,19 @@ describe('role middleware', () => {
 });
 
 describe('identity resolver for other modules', () => {
-  test('returns the verified user ID and role from a valid token', () => {
+  test('returns the verified user ID, role, and name from a valid token', async () => {
     const store = createStore();
     seedDemoAccounts(store);
-    const { token, user } = login(store, { email: 'admin@uh.edu', password: 'Admin123' });
-    const resolve = createIdentityResolver(store);
+    const accounts = createMemoryAuthRepository(store);
+    const { token, user } = await login(accounts, { email: 'admin@uh.edu', password: 'Admin123' });
+    const resolve = createIdentityResolver(accounts);
     const fakeRequest = (header?: string) =>
       ({ get: () => header }) as unknown as Parameters<typeof resolve>[0];
 
-    assert.deepEqual(resolve(fakeRequest(`Bearer ${token}`)), { userId: user.id, role: 'admin' });
-    assert.equal(resolve(fakeRequest('Bearer not-a-real-token')), null);
-    assert.equal(resolve(fakeRequest()), null);
+    assert.deepEqual(await resolve(fakeRequest(`Bearer ${token}`)), {
+      userId: user.id, role: 'admin', name: 'Bookstore Manager',
+    });
+    assert.equal(await resolve(fakeRequest('Bearer not-a-real-token')), null);
+    assert.equal(await resolve(fakeRequest()), null);
   });
 });

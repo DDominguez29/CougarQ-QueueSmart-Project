@@ -26,6 +26,7 @@ export interface QueueEntry {
 export interface Identity {
   userId: string;
   role: 'user' | 'admin';
+  name?: string;
 }
 
 export interface QueueView {

@@ -9,16 +9,18 @@ import {
   validateConfirmPassword,
   validateFullName,
   validateNewPassword,
+  validatePhone,
   validateRegisterEmail,
 } from './authValidation';
 import { registerRequest } from '../../api/auth';
 
-type RegisterField = 'fullName' | 'email' | 'password' | 'confirmPassword';
+type RegisterField = 'fullName' | 'email' | 'phone' | 'password' | 'confirmPassword';
 type RegisterErrors = Partial<Record<RegisterField, string>>;
 
 const initialTouched: Record<RegisterField, boolean> = {
   fullName: false,
   email: false,
+  phone: false,
   password: false,
   confirmPassword: false,
 };
@@ -29,6 +31,7 @@ function RegisterPage() {
   const [values, setValues] = useState<Record<RegisterField, string>>({
     fullName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -39,6 +42,7 @@ function RegisterPage() {
   const errors: RegisterErrors = {
     fullName: validateFullName(values.fullName),
     email: validateRegisterEmail(values.email),
+    phone: validatePhone(values.phone),
     password: validateNewPassword(values.password),
     confirmPassword: validateConfirmPassword(
       values.password,
@@ -64,6 +68,7 @@ function RegisterPage() {
     setTouched({
       fullName: true,
       email: true,
+      phone: true,
       password: true,
       confirmPassword: true,
     });
@@ -76,6 +81,7 @@ function RegisterPage() {
         values.fullName.trim(),
         values.email.trim(),
         values.password,
+        values.phone.trim(),
       );
       navigate('/login', { state: { registeredEmail: user.email } });
     } catch (error) {
@@ -130,6 +136,19 @@ function RegisterPage() {
           error={showError('email')}
           hint="This will be your username."
           required
+        />
+
+        <AuthField
+          id="phone"
+          label="Phone (optional)"
+          type="tel"
+          autoComplete="tel"
+          placeholder="(713) 555-0142"
+          maxLength={AUTH_LIMITS.phoneMax}
+          value={values.phone}
+          onChange={(event) => handleChange('phone', event.target.value)}
+          onBlur={() => handleBlur('phone')}
+          error={showError('phone')}
         />
 
         <AuthField

@@ -149,9 +149,9 @@ Here, sent means available in the application, not email or SMS delivery.
 | created_at | timestamptz | Defaults to current time |
 | expires_at | timestamptz | Required; later than creation |
 
-Member 2 must hash bearer tokens for lookup/storage, enforce expiry, and remove
-sessions on logout. Tokens and passwords use different hashing mechanisms.
-The current session implementation is still in memory.
+Bearer tokens are hashed with SHA-256 before storage and lookup; expired rows are
+rejected and removed, and logout deletes the row. Tokens and passwords use
+different hashing mechanisms.
 
 ## Views, indexes, and deletion
 
