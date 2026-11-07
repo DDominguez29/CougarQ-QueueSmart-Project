@@ -10,6 +10,14 @@ type NotificationRepository = ReturnType<
   typeof createPostgresNotificationRepository
 >;
 
+function notificationId(value: unknown, postgres: boolean): string {
+  const id = validateId(value, 'notificationId');
+  if (postgres && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw new ApiError(400, 'INVALID_INPUT', 'A valid notification ID is required.');
+  }
+  return id;
+}
+
 export function createNotificationsRouter(
   store: Store,
   repository?: NotificationRepository
@@ -49,10 +57,7 @@ export function createNotificationsRouter(
   router.delete('/:notificationId', async (request, response, next) => {
     try {
       const { userId } = requireIdentity(getIdentity(response));
-      const id = validateId(
-        request.params.notificationId,
-        'notificationId'
-      );
+      const id = notificationId(request.params.notificationId, Boolean(repository));
 
       if (repository) {
         await repository.remove(userId, id);
@@ -78,10 +83,7 @@ export function createNotificationsRouter(
       }
 
       const { userId } = requireIdentity(getIdentity(response));
-      const id = validateId(
-        request.params.notificationId,
-        'notificationId'
-      );
+      const id = notificationId(request.params.notificationId, true);
 
       await repository.markViewed(userId, id);
 

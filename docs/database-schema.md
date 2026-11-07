@@ -2,7 +2,7 @@
 
 Source: [schema.sql](../server/src/data/schema.sql). PostgreSQL 14+; verified with
 PostgreSQL 18. The seven tables cover the assignment's six data categories plus
-session storage. See [setup](database.md) and [service APIs](service-api.md).
+session storage. See the [project README](../README.md) for database setup and tests.
 
 ## Shared conventions
 
@@ -85,9 +85,9 @@ Normal startup never overwrites saved service values.
 | status | text | `open` or `closed`; default `open` |
 | created_at, updated_at | timestamptz | Creation/update metadata |
 
-Reuse the same queue when reopening a service. Closing should prevent new joins
-and retain existing visits. Member 3 must enforce this policy in the SQL-backed
-join/close APIs, locking the queue row within the relevant transactions.
+The SQL-backed queue APIs reuse the same queue when reopening a service. Closing
+prevents new joins while retaining existing visits; waiting users can still be
+served. Queue locking coordinates joins, closure, and administrator operations.
 
 ### queue_entries (assignment: QueueEntry)
 
@@ -169,6 +169,11 @@ different hashing mechanisms.
   services/queues. These rules preserve history. Close queues instead of deleting
   active data. Account deletion policy changes require team coordination.
 
-The schema provides storage/constraints for all members. Only services and their
-initial queue creation currently use it through production APIs; see the current
-migration boundary in [database setup](database.md).
+Production APIs persist accounts, profiles, sessions, services, queues, and visit
+records in PostgreSQL. History and reports read retained visits, so finished data
+survives backend restarts and remains available for later reporting. The SQL
+history view is available, while the current APIs use fresh SQL visit snapshots.
+Production notification routes use the SQL repository. Queue joins, departures,
+and service starts create the relevant join/readiness events in the same
+transaction as the visit change. Viewed and dismissed state survives restarts;
+unique event keys prevent repeat alerts, including after dismissal.

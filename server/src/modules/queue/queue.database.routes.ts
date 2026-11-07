@@ -80,9 +80,11 @@ function mapEntry(row: EntryRow): QueueEntry {
   };
 }
 
-export function createPostgresQueueRouter(database: Pool) {
+export function createPostgresQueueRouter(
+  database: Pool,
+  repository = createPostgresQueueRepository(database),
+) {
   const router = Router();
-  const repository = createPostgresQueueRepository(database);
 
   const adminOnly: RequestHandler = (_req, res, next) => {
     requireAdministrator(getIdentity(res));

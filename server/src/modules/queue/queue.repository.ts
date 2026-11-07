@@ -1,6 +1,10 @@
 
 import type { Pool, PoolClient } from 'pg';
 import { ApiError } from '../../shared/ApiError.ts';
+import {
+  createPostgresNotificationRepository,
+  notifyPostgresQueueChanged,
+} from '../notifications/notifications.postgres.ts';
 import type {
   CompleteServiceResult,
   QueueEntry,
@@ -290,11 +294,11 @@ export function createPostgresQueueRepository(
         );
       }
 
-      let entry: JoinedRow | undefined;
-
+      const client = await database.connect();
       try {
+        await client.query('BEGIN');
         const { rows } =
-          await database.query<JoinedRow>(
+          await client.query<JoinedRow>(
             `WITH target_queue AS (
                SELECT q.id, s.name, s.priority
                FROM queues q
@@ -302,7 +306,7 @@ export function createPostgresQueueRepository(
                  ON s.id = q.service_id
                WHERE q.service_id = $2::uuid
                  AND q.status = 'open'
-               FOR SHARE OF q
+               FOR UPDATE OF q
              ),
              inserted AS (
                INSERT INTO queue_entries
@@ -339,62 +343,47 @@ export function createPostgresQueueRepository(
             [userId, serviceId],
           );
 
-        entry = rows[0];
-      } catch (error) {
-        if (
-          (error as { code?: string }).code === '23505'
-        ) {
+        const entry = rows[0];
+        if (!entry) {
+          const { rows } = await client.query<{
+            status: string;
+          }>(
+            `SELECT status
+             FROM queues
+             WHERE service_id = $1::uuid`,
+            [serviceId],
+          );
+
+          if (rows.length === 0) {
+            throw new ApiError(
+              404,
+              'QUEUE_NOT_FOUND',
+              'Queue not found.',
+            );
+          }
+
           throw new ApiError(
             409,
-            'ALREADY_IN_QUEUE',
-            'You already have an active queue entry.',
+            'QUEUE_CLOSED',
+            'This queue is closed.',
           );
         }
 
+        await createPostgresNotificationRepository(client).emit(
+          userId, entry.id, 'joined', `You joined the ${entry.serviceName} queue.`,
+        );
+        await notifyPostgresQueueChanged(client, serviceId);
+        await client.query('COMMIT');
+        return toQueueEntry(entry);
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        if ((error as { code?: string }).code === '23505') {
+          throw new ApiError(409, 'ALREADY_IN_QUEUE', 'You already have an active queue entry.');
+        }
         throw error;
+      } finally {
+        client.release();
       }
-
-      if (!entry) {
-        const { rows } = await database.query<{
-          status: string;
-        }>(
-          `SELECT status
-           FROM queues
-           WHERE service_id = $1::uuid`,
-          [serviceId],
-        );
-
-        if (rows.length === 0) {
-          throw new ApiError(
-            404,
-            'QUEUE_NOT_FOUND',
-            'Queue not found.',
-          );
-        }
-
-        throw new ApiError(
-          409,
-          'QUEUE_CLOSED',
-          'This queue is closed.',
-        );
-      }
-
-      return {
-        id: entry.id,
-        userId: entry.userId,
-        serviceId: entry.serviceId,
-        priority: entry.priority,
-        joinedAt: entry.joinedAt.toISOString(),
-        status: entry.status,
-        endedAt:
-          entry.endedAt?.toISOString() ?? null,
-        serviceStartedAt:
-          entry.serviceStartedAt?.toISOString() ?? null,
-        completedAt:
-          entry.completedAt?.toISOString() ?? null,
-        serviceName: entry.serviceName,
-        userName: entry.userName ?? undefined,
-      };
     },
 
     // -----------------------------------------
@@ -416,83 +405,87 @@ export function createPostgresQueueRepository(
         );
       }
 
-      const { rows } =
-        await database.query<LeftRow>(
-          `WITH updated AS (
-             UPDATE queue_entries AS e
-             SET
-               status = 'left',
-               ended_at = GREATEST(
-                 CURRENT_TIMESTAMP,
-                 e.joined_at
-               )
-             WHERE e.id = $2::uuid
-               AND e.user_id = $1::uuid
-               AND e.status = 'queued'
-             RETURNING e.*
-           )
-           SELECT
-             u.id,
-             u.user_id AS "userId",
-             q.service_id AS "serviceId",
-             u.priority,
-             u.joined_at AS "joinedAt",
-             u.status,
-             u.ended_at AS "endedAt",
-             u.service_started_at AS "serviceStartedAt",
-             u.completed_at AS "completedAt",
-             u.service_name_snapshot AS "serviceName",
-             p.full_name AS "userName"
-           FROM updated u
-           JOIN queues q ON q.id = u.queue_id
-           LEFT JOIN user_profiles p
-             ON p.user_id = u.user_id`,
-          [userId, entryId],
-        );
+      const client = await database.connect();
+      try {
+        await client.query('BEGIN');
+        // Use the same queue-before-visit lock order as serve-next and join.
+        await client.query(`
+          SELECT q.id FROM queues q
+          JOIN queue_entries e ON e.queue_id = q.id
+          WHERE e.id = $1::uuid AND e.user_id = $2::uuid
+          FOR UPDATE OF q
+        `, [entryId, userId]);
+        const { rows } =
+          await client.query<LeftRow>(
+            `WITH updated AS (
+               UPDATE queue_entries AS e
+               SET
+                 status = 'left',
+                 ended_at = GREATEST(
+                   CURRENT_TIMESTAMP,
+                   e.joined_at
+                 )
+               WHERE e.id = $2::uuid
+                 AND e.user_id = $1::uuid
+                 AND e.status = 'queued'
+               RETURNING e.*
+             )
+             SELECT
+               u.id,
+               u.user_id AS "userId",
+               q.service_id AS "serviceId",
+               u.priority,
+               u.joined_at AS "joinedAt",
+               u.status,
+               u.ended_at AS "endedAt",
+               u.service_started_at AS "serviceStartedAt",
+               u.completed_at AS "completedAt",
+               u.service_name_snapshot AS "serviceName",
+               p.full_name AS "userName"
+             FROM updated u
+             JOIN queues q ON q.id = u.queue_id
+             LEFT JOIN user_profiles p
+               ON p.user_id = u.user_id`,
+            [userId, entryId],
+          );
 
-      const entry = rows[0];
+        const entry = rows[0];
 
-      if (!entry) {
-        const existing = await database.query<{
-          status: string;
-        }>(
-          `SELECT status
-           FROM queue_entries
-           WHERE id = $1::uuid
-             AND user_id = $2::uuid`,
-          [entryId, userId],
-        );
+        if (!entry) {
+          const existing = await client.query<{
+            status: string;
+          }>(
+            `SELECT status
+             FROM queue_entries
+             WHERE id = $1::uuid
+               AND user_id = $2::uuid`,
+            [entryId, userId],
+          );
 
-        if (existing.rows.length === 0) {
+          if (existing.rows.length === 0) {
+            throw new ApiError(
+              404,
+              'ENTRY_NOT_FOUND',
+              'Queue entry not found.',
+            );
+          }
+
           throw new ApiError(
-            404,
-            'ENTRY_NOT_FOUND',
-            'Queue entry not found.',
+            409,
+            'NOT_WAITING',
+            'Only a waiting visit can leave the queue.',
           );
         }
 
-        throw new ApiError(
-          409,
-          'NOT_WAITING',
-          'Only a waiting visit can leave the queue.',
-        );
+        await notifyPostgresQueueChanged(client, entry.serviceId);
+        await client.query('COMMIT');
+        return toQueueEntry(entry);
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
       }
-
-      return {
-        id: entry.id,
-        userId: entry.userId,
-        serviceId: entry.serviceId,
-        priority: entry.priority,
-        joinedAt: entry.joinedAt.toISOString(),
-        status: entry.status,
-        endedAt: entry.endedAt.toISOString(),
-        serviceStartedAt:
-          entry.serviceStartedAt?.toISOString() ?? null,
-        completedAt:
-          entry.completedAt?.toISOString() ?? null,
-        serviceName: entry.serviceName,
-        userName: entry.userName ?? undefined,
-      };
     },
 
     // -----------------------------------------
@@ -604,6 +597,7 @@ export function createPostgresQueueRepository(
           serviceId,
         );
 
+        await notifyPostgresQueueChanged(client, serviceId);
         await client.query('COMMIT');
 
         return {

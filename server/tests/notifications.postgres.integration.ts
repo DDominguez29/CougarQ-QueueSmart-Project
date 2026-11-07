@@ -3,9 +3,9 @@ import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { Pool } from 'pg';
 import { createPostgresNotificationRepository } from '../src/modules/notifications/notifications.postgres.ts';
+import { initializeSchema } from '../src/data/database.ts';
 
-// This file is deliberately skipped during ordinary unit-test runs unless
-// TEST_DATABASE_URL is provided. Never point it at your application database.
+// Integration commands require a separate, explicitly configured test database.
 const databaseUrl = process.env.TEST_DATABASE_URL?.trim();
 
 test('PostgreSQL notifications persist, honor ownership, and suppress duplicate events', {
@@ -13,23 +13,23 @@ test('PostgreSQL notifications persist, honor ownership, and suppress duplicate 
 }, async () => {
   if (!databaseUrl) return;
 
-  const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
-  if (databaseName !== 'queuesmart_test') {
-    throw new Error('Safety check: TEST_DATABASE_URL must point to queuesmart_test.');
-  }
-
   const ownerId = randomUUID();
   const otherUserId = randomUUID();
   const serviceId = randomUUID();
   const queueId = randomUUID();
   const entryId = randomUUID();
   const suffix = randomUUID().slice(0, 12);
+  const schema = `notification_test_${randomUUID().replaceAll('-', '')}`;
 
   // Two different pools simulate separate application/database connections.
-  const writer = new Pool({ connectionString: databaseUrl, max: 2 });
-  const reader = new Pool({ connectionString: databaseUrl, max: 2 });
+  const admin = new Pool({ connectionString: databaseUrl, max: 1 });
+  const options = `-c search_path=${schema}`;
+  const writer = new Pool({ connectionString: databaseUrl, options, max: 2 });
+  const reader = new Pool({ connectionString: databaseUrl, options, max: 2 });
 
   try {
+    await admin.query(`CREATE SCHEMA ${schema}`);
+    await initializeSchema(writer);
     // Insert a small set of valid records required by the foreign keys.
     await writer.query(
       `INSERT INTO user_credentials (id, email, password_hash, role)
@@ -99,15 +99,11 @@ test('PostgreSQL notifications persist, honor ownership, and suppress duplicate 
     assert.equal(await readNotifications.emit(ownerId, entryId, 'joined', 'Repeated after dismissal'), null);
     assert.deepEqual(await writeNotifications.list(ownerId), []);
   } finally {
-    // Only delete rows created by this test; delete child records first.
+    await Promise.all([writer.end(), reader.end()]);
     try {
-      await writer.query('DELETE FROM notifications WHERE queue_entry_id = $1', [entryId]);
-      await writer.query('DELETE FROM queue_entries WHERE id = $1', [entryId]);
-      await writer.query('DELETE FROM queues WHERE id = $1', [queueId]);
-      await writer.query('DELETE FROM services WHERE id = $1', [serviceId]);
-      await writer.query('DELETE FROM user_credentials WHERE id = ANY($1::uuid[])', [[ownerId, otherUserId]]);
+      await admin.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
     } finally {
-      await Promise.all([writer.end(), reader.end()]);
+      await admin.end();
     }
   }
 });

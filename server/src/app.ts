@@ -16,6 +16,7 @@ import { createReportsRouter } from './modules/reports/reports.routes.ts';
 import { createServicesRouter } from './modules/services/services.routes.ts';
 import { createMemoryServiceRepository, createPostgresServiceRepository } from './modules/services/services.repository.ts';
 import { createNotificationsRouter } from './modules/notifications/notifications.routes.ts';
+import { createPostgresNotificationRepository } from './modules/notifications/notifications.postgres.ts';
 import { createUserQueueRouter } from './modules/queue/queue.user.routes.ts';
 
 import { createPostgresQueueRouter } from './modules/queue/queue.database.routes.ts';
@@ -68,16 +69,19 @@ export function createApp(store: Store = createStore(), options: AppOptions = {}
 
   app.use('/api/services', createServicesRouter(store, services));
   app.use('/api/history', createHistoryRouter(store, services, options.database));
-  app.use('/api/notifications', createNotificationsRouter(store));
+  app.use('/api/notifications', createNotificationsRouter(
+    store,
+    options.database ? createPostgresNotificationRepository(options.database) : undefined,
+  ));
   app.use('/api/admin/reports', createReportsRouter(store, services, options.database));
   // Production uses PostgreSQL for queue operations.
-// Database-free unit tests retain the original memory-backed routes.
-if (options.database) {
-  app.use('/api', createPostgresQueueRouter(options.database));
-} else {
-  app.use('/api', createAdminQueueRouter(store, services));
-  app.use('/api', createUserQueueRouter(store, services));
-}
+  // Database-free unit tests retain the original memory-backed routes.
+  if (options.database) {
+    app.use('/api', createPostgresQueueRouter(options.database));
+  } else {
+    app.use('/api', createAdminQueueRouter(store, services));
+    app.use('/api', createUserQueueRouter(store, services));
+  }
 
   app.use(notFound);
   app.use(errorHandler);
