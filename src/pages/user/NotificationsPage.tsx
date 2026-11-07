@@ -12,6 +12,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const pendingDelete = useRef(false);
+  const viewed = useRef(new Set<string>());
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -22,6 +23,19 @@ export default function NotificationsPage() {
       try {
         const data = await requestApi<NotificationItem[]>('/api/notifications', { signal: controller.signal });
         if (!controller.signal.aborted) { setNotifications(data); setError(null); }
+        // Opening the page records which alerts the student has actually seen.
+        await Promise.all(data.filter(item => !viewed.current.has(item.id)).map(async item => {
+          try {
+            await requestApi<void>(`/api/notifications/${encodeURIComponent(item.id)}/viewed`, {
+              method: 'PATCH', signal: controller.signal,
+            });
+            viewed.current.add(item.id);
+          } catch (err) {
+            // Another tab may have dismissed the alert since this list loaded.
+            if (requestError(err).status !== 404) throw err;
+            viewed.current.add(item.id);
+          }
+        }));
       } catch (err) {
         const failure = requestError(err);
         if (!controller.signal.aborted) {

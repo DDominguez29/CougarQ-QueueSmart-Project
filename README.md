@@ -27,7 +27,7 @@ Agile also fits our team workflow because different parts of the system can be d
 - React: Lets us organize the interface into reusable components, which makes the application easier to build, maintain, and expand.
 - Node.js: Runs the backend and lets the team use JavaScript and TypeScript across the application.
 - Express: Organizes the backend API routes for queue management, visit history, and reporting.
-- PostgreSQL: Stores the checkpoint database schema and persistent service catalog.
+- PostgreSQL: Stores accounts, profiles, sessions, services, queues, notifications, and visit records used for history and reports.
 - CSS: Gives us direct control over page layout, styling, and responsive design without adding extra styling framework complexity.
 - Vite: Provides a fast development environment for running and building the React application.
 - React Router: Handles navigation between pages such as login, dashboard, queue status, and admin tools.
@@ -45,7 +45,9 @@ Agile also fits our team workflow because different parts of the system can be d
 - Queue management tools for viewing waiting students, starting the next visit, and completing service
 - Admin reports with completed visits, unique people served, and average queue wait time, using Houston local dates
 
-Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Services, their initial queues, accounts, profiles, and sessions persist in PostgreSQL. Queue visits, alerts, and history/report data still reset on backend restart until their assigned database migrations are complete.
+Authentication, service management, queue joining/leaving, administrator queue management, history, notifications, and reporting use the shared backend in `server/`. Sign in before using protected features. Accounts, profiles, sessions, services, queues, and queue visits persist in PostgreSQL. Completed and canceled visits are retained across backend restarts and provide the source for user history and administrator reports. There is no automatic history expiration or restart-time reset.
+
+Notifications also persist in PostgreSQL. Joining a queue saves a confirmation; the first two waiting students receive readiness alerts. Join, leave, and start-next operations save their alert changes in the same transaction as the visit change. Opening Notifications records viewed status, and dismissing an alert hides it without allowing the same event to be recreated. Alerts and dismissals survive backend restarts. Readiness alerts ask students to be prepared; the existing Start next user action still begins service directly.
 
 ## Why These Technologies Fit the Project
 
@@ -77,16 +79,27 @@ Install the project dependencies:
 npm install
 ```
 
-Before starting the backend, create a local PostgreSQL database in pgAdmin. Copy `.env.example` to `.env` if you do not already have one, and configure your own DATABASE_URL. See [PostgreSQL setup](docs/database.md) for connection details and password encoding.
+Before starting the backend, create a local PostgreSQL database in pgAdmin (PostgreSQL 14+; tested with 18). Copy `.env.example` to `.env` only if you do not already have one. Configure your own connection values:
+
+```dotenv
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/queuesmart
+PORT=3001
+```
+
+Replace the username, password, port, and database name with your pgAdmin connection values. URL-encode special characters in the password or database name: `@` becomes `%40`, `#` becomes `%23`, and a space becomes `%20`. Keep `.env` out of Git. Existing environment variables take precedence over `.env`.
 
 Initialize the database and start the backend API:
 
 ```bash
 npm run db:check
 npm run db:setup
-# Optional sample services: npm run db:seed
+# Optional demo accounts and sample services: npm run db:seed
 npm run dev:server
 ```
+
+`db:setup` initializes an empty database or leaves a complete existing schema unchanged. It does not upgrade or reset existing tables; a partial schema fails for inspection. Startup checks database connectivity but does not automatically apply the schema or seed data. Repeating `db:seed` preserves existing service edits and queue status.
+
+The optional seed provides `student@cougarnet.uh.edu` / `Cougar123` and `admin@uh.edu` / `Admin123` for local checks.
 
 In a second terminal, start the frontend:
 
@@ -108,7 +121,22 @@ View backend test coverage:
 npm run test:coverage
 ```
 
-For combined unit and PostgreSQL coverage, configure a separate TEST_DATABASE_URL and run `npm run test:coverage:db`. See the [schema reference](docs/database-schema.md), [service API](docs/service-api.md), [coverage evidence](docs/coverage.md), and [team handoff](docs/member1-handoff.md).
+For PostgreSQL integration tests, create a separate disposable database, such as `queuesmart_test`, in pgAdmin and add this connection to your existing `.env`:
+
+```dotenv
+TEST_DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/queuesmart_test
+```
+
+Run integration tests alone, or combine them with the unit/API tests and coverage:
+
+```bash
+npm run test:db
+npm run test:coverage:db
+```
+
+Integration tests require the explicit test connection and create and remove isolated schemas. The test account needs permission to create schemas. Tables do not need to be installed in the test database beforehand. The tests do not default to the application database.
+
+Submission references in `docs/` are the [schema and design](docs/database-schema.md), [coverage summary](docs/coverage.md), and [captured coverage report](docs/coverage-output.txt). The executable table-creation SQL is in [schema.sql](server/src/data/schema.sql).
 
 Check the code with ESLint:
 

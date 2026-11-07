@@ -1,6 +1,6 @@
 # QueueSmart backend
 
-Node.js + Express + TypeScript. Checkpoint 4 adds PostgreSQL connectivity, schema setup, database health checks, and persistent service management. Other modules still use Assignment 3's in-memory participation/auth storage while their SQL migrations are completed. See [PostgreSQL setup](../docs/database.md).
+Node.js + Express + TypeScript. PostgreSQL stores accounts, profiles, sessions, services, queues, visits, and notifications. User history and administrator reports derive from retained visits. Visits, alerts, and viewed/dismissed state survive backend restarts. See the [project setup](../README.md#getting-started).
 
 ## Run from the repository root
 
@@ -8,7 +8,7 @@ Use Node.js 22.18+ (the setup was verified with 22.20.0). Backend TypeScript run
 
 ```powershell
 npm install
-Copy-Item .env.example .env
+# Only if .env does not already exist: Copy-Item .env.example .env
 # Edit .env with your PostgreSQL connection settings before continuing.
 npm run db:check
 npm run db:setup
@@ -82,13 +82,13 @@ npm run build
 
 Tests exercise health/HTTP errors, queue ordering and transitions, history isolation, validation, permissions, and concurrent serve requests. Add tests as the remaining modules are implemented. A3 targets 70-80% backend coverage. The native coverage command is experimental in Node 22 and prints coverage for loaded source files to the terminal; the listener entry point is not part of this test report.
 
-The combined database coverage command adds real SQL setup, constraints, service persistence/restart, and seed tests. See [coverage evidence](../docs/coverage.md) for the Member 1 snapshot; regenerate it after all feature migrations are integrated.
+The combined database coverage command adds real SQL setup, constraints, queue lifecycle/concurrency, persistence, and seed tests. See the current [coverage evidence](../docs/coverage.md). Rerun after source changes before capturing submission results.
 
 Run the full `npm run lint` before merging. The old browser-only notification context has been removed; user pages use the authenticated backend instead.
 
 ## Authentication integration
 
-`createApp(store, { resolveIdentity })` accepts the authentication module's server-side resolver. It receives an Express request and returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. `index.ts` connects `createIdentityResolver(store)` to the shared store. Calling `createApp` without a resolver keeps identity-protected endpoints unauthenticated, which tests use to verify access denial. Header roles and body user IDs are never authentication.
+`createApp(store, { resolveIdentity })` accepts an optional server-side identity resolver for tests. Normally it builds a resolver from the account repository, using PostgreSQL when a database pool is provided and memory for database-free tests. The resolver returns `{ userId, role: 'user' | 'admin' }` or `null` after verifying the session/token. Async resolvers are supported. Header roles and body user IDs are never authentication.
 
 The frontend API client (`src/api/client.ts`) sends the login bearer token from `src/api/session.ts` and uses relative `/api` URLs through the Vite proxy. `npm run db:seed` adds the demo accounts `student@cougarnet.uh.edu` / `Cougar123` and `admin@uh.edu` / `Admin123`. Accounts, profiles, and sessions are stored in PostgreSQL; sessions expire after eight hours and survive backend restarts.
 
@@ -98,13 +98,13 @@ Frontend login, registration, and logout requests live in `src/api/auth.ts`. The
 
 See the queue/history module guides for endpoints. `src/pages/admin/QueueManagementPage.tsx` and `src/pages/user/HistoryPage.tsx` now read backend responses with loading, empty, and error states. The user dashboard links to history.
 
-The store factory starts empty. Accounts and services come from PostgreSQL; optionally run `npm run db:seed` for the three demo services and queues. Startup no longer recreates demo visits. User joins still write `store.queueEntries` with UTC ISO dates, service-controlled priorities, unique visit IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); the separate completion endpoint finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Finished records remain available for history/reports until the in-memory backend restarts.
+Production queue routes use the PostgreSQL repository; database-free unit tests retain the memory-backed adapters. Visits have UTC timestamps, service-controlled priorities, unique IDs, and service-name snapshots. Serve-next starts service (`serving`, `serviceStartedAt`); completion finishes it (`served`, `completedAt`, and matching `endedAt`). A queued user leaving becomes `left` with `endedAt`. Completed and canceled visits stay in PostgreSQL across restarts, with no automatic expiration. History filters those retained records by the authenticated user.
 
 ## Notifications
 
-`server/src/modules/notifications/` replaces the separate `backend/notifications/` demo server. Its routes share the same identity resolver and `store.notifications` instance as queue events. `GET /api/notifications` lists the signed-in user's alerts; `DELETE /api/notifications/:notificationId` dismisses their alert. Joining confirms the visit, and queue changes alert the first two waiting users for that service without repeating dismissed events. See the module guide for details. The user dashboard links to Notifications; no extra server or notification-specific frontend URL is required.
+`server/src/modules/notifications/` provides authenticated list, dismissal, and viewed-state routes backed by PostgreSQL in production. Queue joins save confirmations and check the first two waiting visits for readiness alerts. Leaving and starting service update those readiness alerts. Event insertion and queue mutations commit or roll back together; all use the same transaction client. Unique event keys prevent duplicates even after dismissal or restart. The page polls every five seconds and marks displayed alerts as viewed. Memory-backed adapters remain for database-free tests; no separate notification server is required.
 
 ## Administrator reporting
 
-`GET /api/admin/reports` powers `/admin/reports` and today's dashboard summary. It requires an administrator, defaults to today in America/Chicago, and accepts `startDate`, `endDate`, optional `serviceId`, and `page`. See `modules/reports/README.md` for definitions and examples. Reports use only backend participation records; restarting the in-memory server clears them.
+`GET /api/admin/reports` powers `/admin/reports` and today's dashboard summary. It requires an administrator, defaults to today in America/Chicago, and accepts `startDate`, `endDate`, optional `serviceId`, and `page`. See `modules/reports/README.md` for definitions and examples. Production reports load retained PostgreSQL visits on each request; a backend restart does not erase them. Select a date range covering older visits to include them in later reports.
 

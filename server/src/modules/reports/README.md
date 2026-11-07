@@ -33,4 +33,4 @@ Admin navigation includes **Reports**. The page has date/service filters, the tw
 
 `server/tests/reports.test.ts` covers metric definitions, missing/invalid timing, empty days, weighted averages, service filters, pagination, Chicago midnight, daylight-saving transitions, and validation. API permission/filter tests are in `routes.test.ts`.
 
-The queue module now uses `queued -> serving -> served`. Start service records `serviceStartedAt`; completion records `completedAt` and `endedAt`. The join/leave owner must retain participation records. Reports reset when this A3 in-memory server restarts; persistent storage belongs to the later database assignment.
+The queue module uses `queued -> serving -> served`. Start service records `serviceStartedAt`; completion records `completedAt` and `endedAt`. Production stores and retains visits in PostgreSQL, including canceled (`left`) visits, and reports load a fresh snapshot on each request. Backend restarts do not erase historical report data. The default report shows today; select an earlier date range to include older visits. Database-free tests use the memory-backed adapter.

@@ -5,6 +5,25 @@ import type { NotificationItem } from './notifications.models.ts';
 export type NotificationType = 'joined' | 'near_turn';
 export type SqlConnection = Pick<Pool | PoolClient, 'query'>;
 
+// Call with the queue mutation's transaction client after the visit changes.
+// The unique event key also covers dismissed alerts and concurrent requests.
+export async function notifyPostgresQueueChanged(database: SqlConnection, serviceId: string) {
+  const { rows } = await database.query<{
+    id: string; user_id: string; service_name_snapshot: string; position: number;
+  }>(`
+    SELECT id, user_id, service_name_snapshot, position::integer AS position
+      FROM queue_positions
+     WHERE service_id = $1::uuid AND position <= 2
+     ORDER BY position
+  `, [serviceId]);
+  const notifications = createPostgresNotificationRepository(database);
+  for (const row of rows) {
+    await notifications.emit(row.user_id, row.id, 'near_turn', row.position === 1
+      ? `You are next for ${row.service_name_snapshot}. Please be ready.`
+      : `There is one person ahead of you for ${row.service_name_snapshot}. Please be ready.`);
+  }
+}
+
 interface NotificationRow {
   id: string;
   user_id: string;
